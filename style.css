@@ -37,3 +37,13 @@
  .nav.menu-open nav{display:flex;position:absolute;top:78px;left:0;right:0;background:var(--bg);padding:20px 5vw 24px;border-bottom:1px solid var(--line);flex-direction:column;gap:20px;box-shadow:0 15px 25px #00000010}
  .nav-btn{margin-left:0}
 }
+
+.quote-form{background:#fff;padding:30px;border:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.quote-form h3{font-family:"Playfair Display",serif;font-weight:500;font-size:29px;margin:0 0 12px}
+.quote-form label{font-size:12px;font-weight:700;margin-top:8px}
+.quote-form input,.quote-form select,.quote-form textarea{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:2px;background:#fbfaf7;color:var(--ink);font:inherit;font-size:14px}
+.quote-form input:focus,.quote-form select:focus,.quote-form textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+.quote-form textarea{resize:vertical}
+.quote-submit{border:0;cursor:pointer;margin-top:10px}
+.form-note{font-size:11px;color:var(--muted);line-height:1.6;margin:2px 0 0}
+@media(max-width:800px){.quote-form{padding:22px}}
