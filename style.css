@@ -23,3 +23,17 @@
 .btn,.nav-btn{transition:transform .2s ease,background .2s ease}
 .btn:hover{background:#9c7744;transform:translateY(-2px)}
 @media(max-width:800px){.why-grid{grid-template-columns:1fr}.portfolio-intro{margin-top:-28px}.project small{font-size:7px}}
+
+/* Accessible mobile navigation and refined site polish */
+.skip-link{position:absolute;left:-9999px;top:8px;background:#fff;color:#111;padding:12px;z-index:30}
+.skip-link:focus{left:12px}
+.menu-toggle{display:none;border:1px solid var(--line);background:transparent;border-radius:4px;padding:10px;cursor:pointer}
+.menu-toggle span{display:block;width:19px;height:2px;background:var(--ink);margin:4px 0}
+.contact>div:first-child>p a{text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:4px}
+@media(max-width:800px){
+ .nav{gap:12px}
+ .menu-toggle{display:block;margin-left:auto}
+ .nav nav{display:none}
+ .nav.menu-open nav{display:flex;position:absolute;top:78px;left:0;right:0;background:var(--bg);padding:20px 5vw 24px;border-bottom:1px solid var(--line);flex-direction:column;gap:20px;box-shadow:0 15px 25px #00000010}
+ .nav-btn{margin-left:0}
+}
