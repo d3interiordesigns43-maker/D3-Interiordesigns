@@ -88,3 +88,45 @@ Use compressed WebP images where possible, keep the original photographs, and ad
 7. Ask real customers for honest reviews; never publish fabricated reviews.
 
 SEO cannot guarantee rankings. Monitor Search Console impressions, clicks, indexing and technical issues over time.
+
+
+## Custom domain connection — GoDaddy DNS
+
+The repository now contains a `CNAME` file for `www.d3interiordesigns.com`. To point the domain to this GitHub Pages website, sign in to the domain's DNS provider and add the records below.
+
+### 1. Add the www record
+
+| Type | Host / Name | Points to |
+|---|---|---|
+| CNAME | `www` | `d3interiordesigns43-maker.github.io` |
+
+### 2. Point the root domain to GitHub Pages
+
+If you also want `d3interiordesigns.com` to redirect to the www version, configure these A records:
+
+| Type | Host / Name | Value |
+|---|---|---|
+| A | `@` | `185.199.108.153` |
+| A | `@` | `185.199.109.153` |
+| A | `@` | `185.199.110.153` |
+| A | `@` | `185.199.111.153` |
+
+Before changing DNS, check whether the root or www records are still used by an existing website. Replace only conflicting website records. **Do not delete MX records or email-related TXT records**, because they may be needed for business email.
+
+### 3. Check GitHub Pages
+
+Open **Repository → Settings → Pages** and confirm:
+- Publishing source is `main` branch and `/ (root)` (if using branch deployment).
+- Custom domain is `www.d3interiordesigns.com`.
+- Enable **Enforce HTTPS** when GitHub makes it available.
+
+DNS changes can take up to 24 hours to propagate. GitHub's official guide: https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site
+
+### 4. Google indexing
+
+After the live site is working:
+- Verify `https://www.d3interiordesigns.com/` in Google Search Console.
+- Submit `https://www.d3interiordesigns.com/sitemap.xml`.
+- Use URL Inspection to request indexing of the homepage and service pages.
+
+Do not expect immediate rankings. Search engines decide when to crawl, index and rank pages.
