@@ -61,3 +61,30 @@ Attingal, Palace Road, Kerala
 CNC cutting • Panel cutting • Edge banding • Mica pressing • Modular kitchen • Wardrobes • TV units • CNC job works
 
 © 2026 D3 Interior Designs. All rights reserved.
+
+
+## Photo gallery workflow
+
+Add only genuine D3 project and factory photographs to the website. Do not use stock images as evidence of completed D3 work.
+
+Suggested image names:
+- `images/cnc-carving-01.webp`
+- `images/modular-kitchen-01.webp`
+- `images/wardrobe-01.webp`
+- `images/edge-banding-01.webp`
+- `images/panel-cutting-01.webp`
+- `images/factory-team-01.webp`
+
+Use compressed WebP images where possible, keep the original photographs, and add a descriptive alt attribute to every gallery image. Ask the business owner to confirm the project type and location before publishing captions.
+
+## Search visibility checklist
+
+1. Confirm the canonical domain and HTTPS redirect in the hosting settings.
+2. Submit `https://www.d3interiordesigns.com/sitemap.xml` in Google Search Console.
+3. Verify the site with Google Search Console and inspect the homepage URL.
+4. Create or update the official Google Business Profile with the correct business address, phone, hours and genuine photographs.
+5. Keep the business name, address and phone consistent across the website and business listings.
+6. Add genuine project photos with descriptive filenames and alt text.
+7. Ask real customers for honest reviews; never publish fabricated reviews.
+
+SEO cannot guarantee rankings. Monitor Search Console impressions, clicks, indexing and technical issues over time.
