@@ -1,23 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 390" role="img" aria-labelledby="title desc">
   <title id="title">D3 Interior Designs and Production</title>
-  <desc id="desc">Bold black and white D3 logo with business location and WhatsApp contact details.</desc>
-  <rect width="1200" height="520" fill="#fff"/>
+  <desc id="desc">D3 Interior Designs and Production black and white business logo.</desc>
+  <rect width="1200" height="390" fill="#fff"/>
   <g fill="#000">
-    <text x="600" y="250" text-anchor="middle"
-      font-family="Arial Black, Montserrat, Helvetica, sans-serif"
-      font-size="250" font-weight="900" letter-spacing="-12">D3</text>
-    <rect x="185" y="282" width="830" height="9"/>
-    <text x="600" y="355" text-anchor="middle"
-      font-family="Arial, Helvetica, sans-serif"
-      font-size="47" font-weight="800" letter-spacing="5">INTERIOR DESIGNS</text>
-    <text x="600" y="410" text-anchor="middle"
-      font-family="Arial, Helvetica, sans-serif"
-      font-size="34" font-weight="700" letter-spacing="8">&amp; PRODUCTION</text>
-    <text x="600" y="462" text-anchor="middle"
-      font-family="Arial, Helvetica, sans-serif"
-      font-size="21" font-weight="600" letter-spacing="1.5">ATTINGAL  •  KORANI  •  THETTICHIRA, KERALA</text>
-    <text x="600" y="495" text-anchor="middle"
-      font-family="Arial, Helvetica, sans-serif"
-      font-size="21" font-weight="700">+91 8606470443  |  WhatsApp: wa.me/918606470443</text>
+    <text x="600" y="245" text-anchor="middle" font-family="Arial Black, Montserrat, Helvetica, sans-serif" font-size="250" font-weight="900" letter-spacing="-12">D3</text>
+    <rect x="185" y="278" width="830" height="8"/>
+    <text x="600" y="350" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="43" font-weight="800" letter-spacing="5">INTERIOR DESIGNS &amp; PRODUCTION</text>
   </g>
 </svg>
