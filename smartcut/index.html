@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#171717">
+  <meta name="description" content="D3 SmartCut furniture panel planning and workshop drawings.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="D3 SmartCut">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/smartcut.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/smartcut.svg">
+  <link rel="stylesheet" href="./app.css">
+  <title>D3 SmartCut</title>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="D3 SmartCut home"><span class="brand-mark">D3</span><span><b>SMARTCUT</b><small>Furniture production planner</small></span></a>
+    <button id="installHelp" class="ghost small" type="button">Install help</button>
+  </header>
+  <main class="shell">
+    <section class="intro">
+      <p class="eyebrow">D3 INTERIOR DESIGNS</p>
+      <h1>Workshop production</h1>
+      <p class="muted">Create panel schedules, keep project data on this device and print a separate drawing for each panel.</p>
+    </section>
+    <section class="card">
+      <div class="section-head"><h2>Project details</h2><span class="tag">MM</span></div>
+      <div class="grid two">
+        <label>Project name<input id="projectName" placeholder="e.g. Modular kitchen – Smith"></label>
+        <label>Customer / reference<input id="customer" placeholder="Customer or job number"></label>
+        <label>Board length (mm)<input id="boardLength" type="number" min="1" value="2440"></label>
+        <label>Board width (mm)<input id="boardWidth" type="number" min="1" value="1220"></label>
+        <label>Kerf (mm)<input id="kerf" type="number" min="0" step="0.1" value="4"></label>
+        <label>Trim allowance (mm)<input id="trim" type="number" min="0" step="0.1" value="10"></label>
+      </div>
+      <div class="actions">
+        <button id="saveProject" class="primary">Save project on this device</button>
+        <button id="newProject" class="secondary">New / clear</button>
+      </div>
+      <p id="saveStatus" class="hint" aria-live="polite">Project data is stored locally in this browser. It does not sync to other devices yet.</p>
+    </section>
+    <section class="card">
+      <div class="section-head"><h2>Add panel</h2><span class="tag">2440 × 1220 default</span></div>
+      <form id="panelForm">
+        <div class="grid two">
+          <label>Panel name<input id="panelName" required placeholder="Left cabinet side"></label>
+          <label>Cabinet / group<input id="cabinet" placeholder="Base cabinet B01"></label>
+          <label>Length (mm)<input id="length" type="number" min="1" required placeholder="720"></label>
+          <label>Width (mm)<input id="width" type="number" min="1" required placeholder="560"></label>
+          <label>Thickness (mm)<input id="thickness" type="number" min="1" value="18" required></label>
+          <label>Quantity<input id="quantity" type="number" min="1" value="1" required></label>
+          <label>Material<input id="material" placeholder="18 mm plywood / MDF"></label>
+          <label>Colour / decor<input id="colour" placeholder="White matt"></label>
+          <label>Grain direction<select id="grain"><option value="Length">Length</option><option value="Width">Width</option><option value="No restriction">No restriction</option></select></label>
+          <label>Edge band sides<select id="edges"><option value="None">None</option><option value="A,B">A + B</option><option value="A,B,C,D">A + B + C + D</option><option value="A,C">A + C</option><option value="B,D">B + D</option></select></label>
+          <label>Groove width (mm)<input id="grooveWidth" type="number" min="0" step="0.1" value="0"></label>
+          <label>Groove depth (mm)<input id="grooveDepth" type="number" min="0" step="0.1" value="0"></label>
+          <label>Groove offset from edge A (mm)<input id="grooveOffset" type="number" min="0" step="0.1" value="0"></label>
+          <label>Hinge cup holes<input id="hinges" type="number" min="0" step="1" value="0"></label>
+          <label>Hinge cup diameter (mm)<input id="hingeDia" type="number" min="0" step="0.1" value="35"></label>
+          <label>Notes<input id="notes" placeholder="Hardware, drilling, assembly notes"></label>
+        </div>
+        <button class="primary full" type="submit">Add panel to project</button>
+      </form>
+    </section>
+    <section class="card">
+      <div class="section-head"><h2>Panel schedule</h2><span id="panelCount" class="tag">0 panels</span></div>
+      <div id="panelList" class="panel-list"><p class="empty">No panels yet. Add your first panel above.</p></div>
+      <div class="actions wrap">
+        <button id="printDrawings" class="primary">Print individual panel drawings / PDF</button>
+        <button id="exportCsv" class="secondary">Export cutting list CSV</button>
+        <button id="exportJson" class="secondary">Backup project JSON</button>
+        <label class="file-button">Import project JSON<input id="importJson" type="file" accept="application/json"></label>
+      </div>
+    </section>
+    <section class="card notice">
+      <h2>Machine output status</h2>
+      <p><b>Mach3 G-code:</b> not enabled. A verified machine profile, origin, axis directions, tool table, spindle control and dry-run validation are required first.</p>
+      <p><b>WoodWOP:</b> planned as a separate DXF / supported WoodWOP workflow. This starter does not create MPR/MPRX files.</p>
+      <p><b>Nesting:</b> no production-grade optimiser in this starter. Check all dimensions, grain direction, kerf, trim and workholding before cutting.</p>
+    </section>
+    <footer>D3 Interior Designs · D3 SmartCut · Local-first prototype</footer>
+  </main>
+  <dialog id="helpDialog"><div class="dialog-inner"><h2>Install D3 SmartCut on iPhone</h2><ol><li>Open this address in <b>Safari</b>.</li><li>Tap the Share icon.</li><li>Choose <b>Add to Home Screen</b>.</li><li>Keep the name D3 SmartCut and tap Add.</li></ol><p>Sign in through the workshop access page when prompted. After the first successful load, the app shell can open offline; project data remains on this iPhone.</p><button id="closeHelp" class="primary full">Close</button></div></dialog>
+  <script src="./app.js" defer></script>
+</body>
+</html>
