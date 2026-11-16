@@ -1,0 +1,15 @@
+{
+  "id": "./",
+  "name": "D3 SmartCut – Furniture Production",
+  "short_name": "D3 SmartCut",
+  "description": "Private furniture panel planning and workshop drawing app for D3 Interior Designs.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f5f3",
+  "theme_color": "#171717",
+  "icons": [
+    { "src": "./icons/smartcut.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
