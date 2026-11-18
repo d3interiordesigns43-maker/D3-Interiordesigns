@@ -44,13 +44,14 @@ function makeSheetPlan(){
  const trim=Number($("trim").value)||0,kerf=Number($("kerf").value)||0;
  const usableL=boardL-2*trim,usableW=boardW-2*trim;
  const pieces=[];
- panels.forEach(p=>{for(let q=0;q<(Number(p.quantity)||1);q++)pieces.push({id:p.id,name:p.name,l:Number(p.length),w:Number(p.width),grain:p.grain});});
- pieces.sort((a,b)=>Math.max(b.l,b.w)-Math.max(a.l,a.w));
- const sheets=[];
+ panels.forEach(p=>{for(let q=0;q<(Number(p.quantity)||1);q++)pieces.push({id:p.id,name:p.name,l:Number(p.length),w:Number(p.width),grain:p.grain,material:p.material||"Unspecified",colour:p.colour||"",thickness:p.thickness||18});});
+ pieces.sort((a,b)=>(a.material+"|"+a.colour+"|"+a.thickness).localeCompare(b.material+"|"+b.colour+"|"+b.thickness)||Math.max(b.l,b.w)-Math.max(a.l,a.w));
+ const sheets=[];let groupKey="",groupSheets=[];
  for(const piece of pieces){
+  const nextGroup=piece.material+"|"+piece.colour+"|"+piece.thickness;if(nextGroup!==groupKey){groupKey=nextGroup;groupSheets=[];}
   const opts=piece.grain==="Length"?[{l:piece.l,w:piece.w}]:piece.grain==="Width"?[{l:piece.w,w:piece.l}]:[{l:piece.l,w:piece.w},{l:piece.w,w:piece.l}];
   let placed=false;
-  for(const sheet of sheets){
+  for(const sheet of groupSheets){
    for(const row of sheet.rows){
     for(const o of opts){
      const gap=row.items.length?kerf:0;
@@ -65,8 +66,8 @@ function makeSheetPlan(){
   if(placed)continue;
   let choice=opts.find(o=>o.l<=usableL&&o.w<=usableW);
   if(!choice)return {error:"Panel "+piece.id+" ("+piece.l+" × "+piece.w+" mm) cannot fit on the sheet with its grain direction and trim."};
-  let sheet=sheets.find(s=>s.usedH+(s.rows.length?kerf:0)+choice.w<=usableW);
-  if(!sheet){sheet={rows:[],usedH:0};sheets.push(sheet);}
+  let sheet=groupSheets.find(s=>s.usedH+(s.rows.length?kerf:0)+choice.w<=usableW);
+  if(!sheet){sheet={rows:[],usedH:0,material:piece.material,colour:piece.colour,thickness:piece.thickness};sheets.push(sheet);groupSheets.push(sheet);}
   const y=sheet.rows.length?sheet.usedH+kerf:0;
   sheet.rows.push({y,h:choice.w,x:choice.l,items:[{...piece,...choice,x:0,y}]});
   sheet.usedH=y+choice.w;
