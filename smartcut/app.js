@@ -18,6 +18,38 @@ function download(content,name,type){const blob=new Blob([content],{type}),url=U
 $("installHelp").addEventListener("click",()=>$("helpDialog").showModal());$("closeHelp").addEventListener("click",()=>$("helpDialog").close());
 if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("PWA worker registration failed",err)));}
 loadProject();
+
+function individualPanelSvg(p){
+ const W=640,H=420,pad=48,scale=Math.min((W-2*pad)/p.length,(H-2*pad)/p.width),w=p.length*scale,h=p.width*scale,x=(W-w)/2,y=(H-h)/2;
+ let marks="";
+ const grooveOffset=Math.max(0,Number(p.grooveOffset)||0);
+ if(Number(p.grooveWidth)>0&&Number(p.grooveDepth)>0){
+  const ref=p.grooveReference||"A";
+  const gy=ref==="B"?y+h-grooveOffset*scale:y+grooveOffset*scale;
+  marks+='<line x1="'+x+'" y1="'+gy+'" x2="'+(x+w)+'" y2="'+gy+'" stroke="#b3261e" stroke-width="4" stroke-dasharray="10 6"/>';
+ }
+ const hinges=Number(p.hinges)||0, dia=Number(p.hingeDia)||35;
+ for(let i=0;i<hinges;i++){
+  const along=hinges===1?p.width/2:(Number(p.hingeTopOffset)||100)+i*(p.width-(Number(p.hingeTopOffset)||100)-(Number(p.hingeBottomOffset)||100))/(hinges-1);
+  const hx=x+(Number(p.hingeSideOffset)||21.5)*scale,hy=y+along*scale;
+  marks+='<circle cx="'+hx+'" cy="'+hy+'" r="'+Math.max(5,dia*scale/2)+'" fill="none" stroke="#175b91" stroke-width="3"/>';
+ }
+ const edges=(p.edges||"None").split(",").filter(v=>v!=="None");
+ const edgeLines={A:[x,y,x+w,y],B:[x+w,y,x+w,y+h],C:[x,y+h,x+w,y+h],D:[x,y,x,y+h]};
+ edges.forEach(e=>{const v=edgeLines[e];if(v)marks+='<line x1="'+v[0]+'" y1="'+v[1]+'" x2="'+v[2]+'" y2="'+v[3]+'" stroke="#c62828" stroke-width="5"/>';});
+ return '<svg class="panel-svg" viewBox="0 0 640 420" xmlns="http://www.w3.org/2000/svg"><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="#e4d2ac" stroke="#5f4c2e" stroke-width="3"/>'+marks+'<text x="'+(W/2)+'" y="'+(y-16)+'" text-anchor="middle" font-size="15" fill="#111">'+p.length+' mm</text><text x="'+(x+w+15)+'" y="'+(H/2)+'" transform="rotate(90 '+(x+w+15)+' '+(H/2)+')" text-anchor="middle" font-size="15" fill="#111">'+p.width+' mm</text><text x="'+(W/2)+'" y="'+(y+h+25)+'" text-anchor="middle" font-size="13" fill="#111">Grain: '+escapeHtml(p.grain||"—")+'</text><text x="'+(x+8)+'" y="'+(y+18)+'" font-size="12" fill="#111">A</text><text x="'+(x+w-18)+'" y="'+(y+18)+'" font-size="12" fill="#111">B</text><text x="'+(x+w-18)+'" y="'+(y+h-8)+'" font-size="12" fill="#111">C</text><text x="'+(x+8)+'" y="'+(y+h-8)+'" font-size="12" fill="#111">D</text></svg>';
+}
+$("printDrawings").addEventListener("click",()=>{
+ if(!panels.length){alert("Add at least one panel first.");return;}
+ const data=projectData();
+ const previous=document.querySelector(".drawings");if(previous)previous.remove();
+ const section=document.createElement("section");section.className="drawings";
+ section.innerHTML=panels.map(p=>'<article class="drawing-page"><p class="small-print">D3 INTERIOR DESIGNS · D3 SMARTCUT · '+escapeHtml(data.name||"UNNAMED PROJECT")+'</p><h1>'+escapeHtml(p.id)+' — '+escapeHtml(p.name)+'</h1><div class="drawing-meta"><div><b>Customer reference</b><br>'+escapeHtml(data.customer||"—")+'</div><div><b>Cabinet</b><br>'+escapeHtml(p.cabinet||"—")+'</div><div><b>Finished size</b><br>'+p.length+' × '+p.width+' × '+p.thickness+' mm</div><div><b>Quantity</b><br>'+p.quantity+'</div><div><b>Material / colour</b><br>'+escapeHtml(p.material||"—")+' / '+escapeHtml(p.colour||"—")+'</div><div><b>Grain</b><br>'+escapeHtml(p.grain||"—")+'</div><div><b>Edge band</b><br>'+escapeHtml(p.edges||"None")+' · '+(p.edgeBandThickness||0.8)+' mm</div></div>'+individualPanelSvg(p)+'<div class="drawing-notes"><b>Machining notes</b><br>Groove: '+(p.grooveWidth||0)+' mm wide × '+(p.grooveDepth||0)+' mm deep; offset: '+(p.grooveOffset||0)+' mm from '+escapeHtml(p.grooveReference||"Edge A")+'<br>Hinge cup holes: '+(p.hinges||0)+' × Ø'+(p.hingeDia||35)+' mm; side offset '+(p.hingeSideOffset||21.5)+' mm; top '+(p.hingeTopOffset||100)+' mm; bottom '+(p.hingeBottomOffset||100)+' mm<br>Additional notes: '+escapeHtml(p.notes||"—")+'<br><br><b>Workshop verification:</b> Confirm dimensions, datum edges, machining coordinates, hardware templates, tool sizes and workholding before manufacture.</div><p class="small-print">Planning drawing only — not a validated CNC toolpath. '+new Date().toLocaleDateString()+'</p></article>').join("");
+ document.body.appendChild(section);document.body.classList.add("printing-drawings");
+ const cleanup=()=>{document.body.classList.remove("printing-drawings");section.remove();window.removeEventListener("afterprint",cleanup);};
+ window.addEventListener("afterprint",cleanup,{once:true});window.print();setTimeout(cleanup,60000);
+});
+
 function edgeBandTotal(){
  return panels.reduce((sum,p)=>{
   const sides=(p.edges||"None").split(",").filter(s=>s!=="None");
