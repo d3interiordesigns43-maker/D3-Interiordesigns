@@ -21,7 +21,7 @@ const addPanel = e => {
   if(s.length<=0||s.width<=0){alert("Edge banding thickness leaves no core-board dimension. Check selected edges.");return;}
   panels.push(p);render();saveProject();
   $("saveStatus").textContent="Panel "+p.id+" added to this project.";
-  e.target.reset();get("thickness").value=18;get("quantity").value=1;get("hingeDia").value=35;get("hingeEdgeOffset").value=22.5;get("hingeEndOffset").value=100;get("hingeDepth").value=12.5;get("edgeThickness").value="0.8";
+  $("panelForm").reset();get("thickness").value=18;get("quantity").value=1;get("hingeDia").value=35;get("hingeEdgeOffset").value=22.5;get("hingeEndOffset").value=100;get("hingeDepth").value=12.5;get("edgeThickness").value="0.8";
  } catch(err){console.error("Add panel failed",err);$("saveStatus").textContent="Add panel failed: "+(err.message||"unknown error");alert("Could not add this panel: "+(err.message||"unknown error"));}
 };
 $("panelForm").addEventListener("submit",addPanel);
