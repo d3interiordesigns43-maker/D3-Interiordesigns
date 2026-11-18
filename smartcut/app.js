@@ -171,17 +171,17 @@ $("printSheets").addEventListener("click",()=>{
  const totalQty=plan.pieceCount;
  const project=projectData();
  const section=document.createElement("section");section.className="sheet-report";
- const panelRows=panels.map(p=>'<tr><td>'+escapeHtml(p.id)+' · '+escapeHtml(p.name)+'</td><td>'+p.length+' × '+p.width+' × '+p.thickness+'</td><td>'+p.quantity+'</td><td>'+escapeHtml(p.edges||"None")+' · '+(p.edgeBandThickness||0.8)+' mm</td><td>'+escapeHtml(p.hardware||"—")+'</td><td>'+escapeHtml(p.notes||"—")+'</td></tr>').join("");
+ const panelRows=panels.map(p=>'<tr><td>'+escapeHtml(p.id)+' · '+escapeHtml(p.name)+'</td><td>'+p.length+' × '+p.width+' × '+p.thickness+'</td><td>'+p.quantity+'</td><td>'+escapeHtml(p.hardware||"—")+'</td><td>'+escapeHtml(p.notes||"—")+'</td></tr>').join("");
  const sheetPages=unique.map((entry,i)=>{
   const s=entry.sheet,parts=s.rows.reduce((n,r)=>n+r.items.length,0);
   return '<article class="sheet-page"><h2>Layout '+(i+1)+' of '+unique.length+' · '+plan.boardL+' × '+plan.boardW+' mm</h2><p class="sheet-meta">Material: '+escapeHtml(s.material)+' · Colour: '+escapeHtml(s.colour||"—")+' · Thickness: '+s.thickness+' mm · <b>Print quantity: '+entry.count+' identical sheet'+(entry.count===1?"":"s")+'</b></p>'+sheetSvg(s,plan)+'<p>'+parts+' panels in this layout · Red: edge band · Blue: hinge holes · Green: grain direction</p></article>';
  }).join("");
  section.innerHTML=
  '<section class="summary-page"><header><h1>D3 Interior Designs — D3 SmartCut</h1><h2>Workshop cutting report</h2><p><b>Project:</b> '+escapeHtml(project.name||"Unnamed project")+'<br><b>Customer reference:</b> '+escapeHtml(project.customer||"—")+'</p></header>'+
- '<div class="sheet-summary"><div><b>'+totalQty+'</b><small>Total panel pieces</small></div><div><b>'+plan.sheets.length+'</b><small>Total '+plan.boardL+' × '+plan.boardW+' mm sheets</small></div><div><b>'+totalEdge.toFixed(0)+' mm</b><small>Total edge band length</small></div><div><b>'+(waste/1000000).toFixed(3)+' m²</b><small>Total cutting waste · '+wastePct.toFixed(1)+'%</small></div><div><b>'+(totalPanelArea/1000000).toFixed(3)+' m²</b><small>Total panel area</small></div><div><b>'+unique.length+'</b><small>Different sheet layouts to print</small></div></div>'+
+ '<div class="sheet-summary"><div><b>'+totalQty+'</b><small>Total panel pieces</small></div><div><b>'+plan.sheets.length+'</b><small>Total '+plan.boardL+' × '+plan.boardW+' mm sheets</small></div><div><b>'+(totalEdge/1000).toFixed(2)+' m</b><small>Total edge band length</small></div><div><b>'+(waste/1000000).toFixed(3)+' m²</b><small>Total cutting waste · '+wastePct.toFixed(1)+'%</small></div><div><b>'+(totalPanelArea/1000000).toFixed(3)+' m²</b><small>Total panel area</small></div><div><b>'+unique.length+'</b><small>Different sheet layouts to print</small></div></div>'+
  '<p class="waste-note">Cutting waste is estimated as total full-sheet area minus the finished panel area. It includes trim, kerf and remaining offcuts; it is an area estimate, not a measured waste-bin quantity.</p>'+
- '<h3>Edge band totals</h3><p>0.8 mm: '+(edge["0.8"]||0).toFixed(0)+' mm &nbsp; | &nbsp; 2 mm: '+(edge["2"]||0).toFixed(0)+' mm</p>'+
- '<h3>Panel dimensions and notes</h3><table><thead><tr><th>Panel</th><th>Size L × W × T (mm)</th><th>Qty</th><th>Edge band</th><th>Hardware / accessories</th><th>Notes</th></tr></thead><tbody>'+panelRows+'</tbody></table>'+
+ '<h3>Edge band totals</h3><p>0.8 mm band: '+((edge["0.8"]||0)/1000).toFixed(2)+' m &nbsp; | &nbsp; 2 mm band: '+((edge["2"]||0)/1000).toFixed(2)+' m</p>'+
+ '<h3>Panel dimensions and notes</h3><table><thead><tr><th>Panel</th><th>Size L × W × T (mm)</th><th>Qty</th><th>Hardware / accessories</th><th>Notes</th></tr></thead><tbody>'+panelRows+'</tbody></table>'+
  '<h3>Project notes</h3><p class="project-note">'+escapeHtml(project.projectNotes||"—")+'</p></section>'+sheetPages;
  document.body.appendChild(section);document.body.classList.add("printing-sheets");const cleanup=()=>{document.body.classList.remove("printing-sheets");section.remove();window.removeEventListener("afterprint",cleanup);};window.addEventListener("afterprint",cleanup,{once:true});window.print();setTimeout(cleanup,60000);
 });
