@@ -9,7 +9,7 @@ function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;",
 function coreSize(p){const e=p.edgeSides||[],t=Number(p.edgeThickness)||0;return{length:Math.max(0,p.length-((e.includes("B")?t:0)+(e.includes("D")?t:0))),width:Math.max(0,p.width-((e.includes("A")?t:0)+(e.includes("C")?t:0)))};}
 function hingePositions(p){const n=Math.max(0,Number(p.hinges)||0),usable=p.width-2*(Number(p.hingeEndOffset)||100);if(!n||usable<0)return[];return Array.from({length:n},(_,i)=>({x:p.hingeSide==="Right"?p.length-(Number(p.hingeEdgeOffset)||22.5):(Number(p.hingeEdgeOffset)||22.5),y:n===1?p.width/2:Number(p.hingeEndOffset)+i*usable/(n-1)}));}
 function render(){$("panelCount").textContent=panels.length+" panel"+(panels.length===1?"":"s");$("panelList").innerHTML=panels.length?panels.map((raw,i)=>{const p=normalisePanel(raw),s=coreSize(p);return '<div class="panel-row"><div><strong>'+escapeHtml(p.id)+" · "+escapeHtml(p.name)+'</strong><small>Finished '+p.length+' × '+p.width+' mm · Core '+s.length.toFixed(1)+' × '+s.width.toFixed(1)+' mm · '+p.thickness+' mm · Qty '+p.quantity+' · Edge '+(p.edgeSides.join(",")||"None")+' / '+p.edgeThickness+' mm</small></div><button class="delete" data-remove="'+i+'" aria-label="Delete '+escapeHtml(p.id)+'">Delete</button></div>';}).join(""):'<p class="empty">No panels yet. Add your first panel above.</p>'; }
-$("panelForm").addEventListener("submit",e=>{
+const addPanel = e => {
  e.preventDefault();
  try {
   const get=id=>$(id);
@@ -22,8 +22,10 @@ $("panelForm").addEventListener("submit",e=>{
   panels.push(p);render();saveProject();
   $("saveStatus").textContent="Panel "+p.id+" added to this project.";
   e.target.reset();get("thickness").value=18;get("quantity").value=1;get("hingeDia").value=35;get("hingeEdgeOffset").value=22.5;get("hingeEndOffset").value=100;get("hingeDepth").value=12.5;get("edgeThickness").value="0.8";
- } catch(err){console.error("Add panel failed",err);alert("Could not add this panel. Please refresh SmartCut and try again.");}
-});
+ } catch(err){console.error("Add panel failed",err);$("saveStatus").textContent="Add panel failed: "+(err.message||"unknown error");alert("Could not add this panel: "+(err.message||"unknown error"));}
+};
+$("panelForm").addEventListener("submit",addPanel);
+$("addPanelButton").addEventListener("click",e=>{e.preventDefault();addPanel(e);});
 $("panelList").addEventListener("click",e=>{const b=e.target.closest("[data-remove]");if(!b)return;panels.splice(+b.dataset.remove,1);panels.forEach((p,i)=>p.id="PN-"+String(i+1).padStart(3,"0"));render();saveProject();});
 $("saveProject").addEventListener("click",saveProject);
 $("newProject").addEventListener("click",()=>{if(!confirm("Clear the current project on this device? Export a backup first if needed."))return;panels=[];["projectName","customer"].forEach(id=>$(id).value="");$("boardLength").value=2440;$("boardWidth").value=1220;$("stockQty").value=0;$("kerf").value=4;$("trim").value=10;localStorage.removeItem(STORE_KEY);localStorage.removeItem("d3-smartcut-project-v1");render();$("saveStatus").textContent="New empty project.";});
