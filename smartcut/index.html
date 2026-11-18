@@ -34,6 +34,7 @@
         <label>Board width (mm)<input id="boardWidth" type="number" min="1" value="1220"></label>
         <label>Kerf (mm)<input id="kerf" type="number" min="0" step="0.1" value="4"></label>
         <label>Trim allowance (mm)<input id="trim" type="number" min="0" step="0.1" value="10"></label>
+        <label>Stock sheet quantity<input id="stockQty" type="number" min="0" step="1" value="0"></label>
       </div>
       <div class="actions">
         <button id="saveProject" class="primary">Save project on this device</button>
@@ -54,12 +55,16 @@
           <label>Material<input id="material" placeholder="18 mm plywood / MDF"></label>
           <label>Colour / decor<input id="colour" placeholder="White matt"></label>
           <label>Grain direction<select id="grain"><option value="Length">Length</option><option value="Width">Width</option><option value="No restriction">No restriction</option></select></label>
-          <label>Edge band sides<select id="edges"><option value="None">None</option><option value="A,B">A + B</option><option value="A,B,C,D">A + B + C + D</option><option value="A,C">A + C</option><option value="B,D">B + D</option></select></label>
+          <div class="field-group"><span class="field-title">Edge band sides (A top · B right · C bottom · D left)</span><div class="edge-checks"><label><input type="checkbox" name="edgeSide" value="A"> A</label><label><input type="checkbox" name="edgeSide" value="B"> B</label><label><input type="checkbox" name="edgeSide" value="C"> C</label><label><input type="checkbox" name="edgeSide" value="D"> D</label></div></div>
+          <label>Edge tape thickness<select id="edgeThickness"><option value="0.8">0.8 mm</option><option value="2">2.0 mm</option></select></label>
           <label>Groove width (mm)<input id="grooveWidth" type="number" min="0" step="0.1" value="0"></label>
           <label>Groove depth (mm)<input id="grooveDepth" type="number" min="0" step="0.1" value="0"></label>
           <label>Groove offset from edge A (mm)<input id="grooveOffset" type="number" min="0" step="0.1" value="0"></label>
           <label>Hinge cup holes<input id="hinges" type="number" min="0" step="1" value="0"></label>
-          <label>Hinge cup diameter (mm)<input id="hingeDia" type="number" min="0" step="0.1" value="35"></label>
+          <label>Hinge cup diameter (mm)<input id="hingeDia" type="number" min="1" step="0.1" value="35"></label>
+          <label>Cup centre from hinge edge (mm)<input id="hingeEdgeOffset" type="number" min="1" step="0.1" value="22.5"></label>
+          <label>First / last hinge centre from top & bottom (mm)<input id="hingeEndOffset" type="number" min="1" step="1" value="100"></label>
+          <label>Hinge cup depth (mm)<input id="hingeDepth" type="number" min="1" step="0.1" value="12.5"></label>
           <label>Notes<input id="notes" placeholder="Hardware, drilling, assembly notes"></label>
         </div>
         <button class="primary full" type="submit">Add panel to project</button>
@@ -79,6 +84,8 @@
       <h2>Machine output status</h2>
       <p><b>Mach3 G-code:</b> not enabled. A verified machine profile, origin, axis directions, tool table, spindle control and dry-run validation are required first.</p>
       <p><b>WoodWOP:</b> planned as a separate DXF / supported WoodWOP workflow. This starter does not create MPR/MPRX files.</p>
+      <p><b>Edge banding:</b> core-board dimensions are automatically reduced by the selected tape thickness on each selected edge. Finished dimensions remain as entered.</p>
+      <p><b>Hinge drilling:</b> adjustable planning coordinates are shown on panel drawings. Confirm every dimension against the exact hinge manufacturer template before drilling; this is not CNC-ready output.</p>
       <p><b>Nesting:</b> no production-grade optimiser in this starter. Check all dimensions, grain direction, kerf, trim and workholding before cutting.</p>
     </section>
     <footer>D3 Interior Designs · D3 SmartCut · Local-first prototype</footer>
