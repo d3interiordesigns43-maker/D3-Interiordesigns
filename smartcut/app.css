@@ -49,3 +49,15 @@
  body.printing-drawings .drawing-notes{font-size:9pt;line-height:1.5;margin-top:4mm}
  body.printing-drawings .small-print{font-size:8pt;color:#555}
 }
+
+@media print{
+ body.printing-sheets{background:#fff!important;margin:0!important;padding:0!important}
+ body.printing-sheets>*:not(.sheet-report){display:none!important}
+ body.printing-sheets>.sheet-report{display:block!important;position:static!important;width:auto!important;margin:0!important;padding:8mm!important}
+ body.printing-sheets .summary-page{break-after:page!important;page-break-after:always!important}
+ body.printing-sheets .sheet-page{break-after:page!important;page-break-after:always!important;break-inside:avoid}
+ body.printing-sheets .sheet-page:last-child{break-after:auto!important;page-break-after:auto!important}
+ body.printing-drawings>*:not(.drawings){display:none!important}
+ body.printing-drawings>.drawings{display:block!important;position:static!important;width:auto!important;margin:0!important}
+ body.printing-drawings .drawing-page:last-child{break-after:auto!important;page-break-after:auto!important}
+}
