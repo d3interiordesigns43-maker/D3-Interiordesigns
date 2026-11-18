@@ -50,9 +50,9 @@ Cloudflare Access protects the hostname at the edge. The current app stores proj
 - Hinge planning coordinates are included in panel drawings and CSV exports. Hardware-specific drilling must be verified against the exact hinge manufacturer template.
 - Local browser saving, JSON backup/restore and CSV cutting-list export.
 - Browser print layout creates a separate print page for each panel; choose Save as PDF in the print dialog.
-- Service worker caches the static app shell for limited offline reopening.
+- Panel-saw cutting optimizer: guillotine-style heuristic layout planner groups parts by material and thickness, applies edge-band core-size deductions, kerf and trim allowances, respects grain direction by disabling rotation when grain is specified, and reports sheet layouts, utilization, reusable offcut rectangles and unplaced parts. A stock quantity of 0 means unlimited; a positive quantity is a per-material/thickness limit. Results can be exported as a layout CSV.\n- Service worker caches the static app shell for limited offline reopening.
 
-Not yet implemented: authenticated cloud project storage, multi-user roles, validated cutting optimisation, manufacturer-specific hinge templates, DXF export, WoodWOP MPR/MPRX export, or Mach3 G-code. The current groove/hinge fields are notes/illustrations, not verified machining coordinates. Do not use generated drawings or code as machine-ready instructions.
+Not yet implemented: authenticated cloud project storage, multi-user roles, production-grade global optimisation, a verified panel-saw cut sequence, offcut inventory reuse between jobs, manufacturer-specific hinge templates, DXF export, WoodWOP MPR/MPRX export, or Mach3 G-code. The current groove/hinge fields are notes/illustrations, not verified machining coordinates. Do not use generated drawings or code as machine-ready instructions.
 
 ## Updating
 
