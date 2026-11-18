@@ -2,33 +2,19 @@ const $=id=>document.getElementById(id);
 const STORE_KEY="d3-smartcut-project-v1";
 let panels=[];
 function projectData(){return{name:$("projectName").value.trim(),customer:$("customer").value.trim(),boardLength:+$("boardLength").value||2440,boardWidth:+$("boardWidth").value||1220,kerf:+$("kerf").value||0,trim:+$("trim").value||0,units:"mm",panels,updatedAt:new Date().toISOString()};}
-function loadProject(){try{const d=JSON.parse(localStorage.getItem(STORE_KEY)||localStorage.getItem("d3-smartcut-project-v2")||"null");if(!d)return;$("projectName").value=d.name||"";$("customer").value=d.customer||"";$("boardLength").value=d.boardLength||2440;$("boardWidth").value=d.boardWidth||1220;$("kerf").value=d.kerf??4;$("trim").value=d.trim??10;panels=Array.isArray(d.panels)?d.panels.map(p=>({...p,edges:p.edges||(Array.isArray(p.edgeSides)&&p.edgeSides.length?p.edgeSides.join(","):"None")})):[];render();}catch(e){console.warn("Could not load saved project",e);}}
+function loadProject(){try{const d=JSON.parse(localStorage.getItem(STORE_KEY)||localStorage.getItem("d3-smartcut-project-v2")||"null");if(!d)return;$("projectName").value=d.name||"";$("customer").value=d.customer||"";$("projectNotes").value=d.projectNotes||"";$("boardLength").value=d.boardLength||2440;$("boardWidth").value=d.boardWidth||1220;$("kerf").value=d.kerf??4;$("trim").value=d.trim??10;panels=Array.isArray(d.panels)?d.panels.map(p=>({...p,edges:p.edges||(Array.isArray(p.edgeSides)&&p.edgeSides.length?p.edgeSides.join(","):"None")})):[];render();}catch(e){console.warn("Could not load saved project",e);}}
 function saveProject(){try{localStorage.setItem(STORE_KEY,JSON.stringify(projectData()));$("saveStatus").textContent="Saved on this device at "+new Date().toLocaleTimeString()+". This does not sync to other devices."; }catch(e){$("saveStatus").textContent="Could not save. Export a JSON backup and check device storage.";}}
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function render(){ const totalPieces=panels.reduce((n,p)=>n+(Number(p.quantity)||1),0);$("panelCount").textContent=totalPieces+" pieces · "+panels.length+" panel types";$("panelList").innerHTML=panels.length?panels.map((p,i)=>'<div class="panel-row"><div><strong>'+escapeHtml(p.id)+" · "+escapeHtml(p.name)+'</strong><small>'+p.length+' × '+p.width+' × '+p.thickness+' mm · Qty '+p.quantity+' · '+escapeHtml(p.material||"Material not set")+'</small></div><button class="delete" data-remove="'+i+'" aria-label="Delete '+escapeHtml(p.id)+'">Delete</button></div>').join(""):'<p class="empty">No panels yet. Add your first panel above.</p>'; }
 $("panelForm").addEventListener("submit",e=>{e.preventDefault();const p={id:"PN-"+String(panels.length+1).padStart(3,"0"),name:$("panelName").value.trim(),cabinet:$("cabinet").value.trim(),length:+$("length").value,width:+$("width").value,thickness:+$("thickness").value,quantity:+$("quantity").value,material:$("material").value.trim(),colour:$("colour").value.trim(),grain:$("grain").value,edges:$("edges").value,edgeBandThickness:+$("edgeBandThickness").value,grooveWidth:+$("grooveWidth").value,grooveDepth:+$("grooveDepth").value,grooveReference:$("grooveReference").value,grooveOffset:+$("grooveOffset").value,hinges:+$("hinges").value,hingeDia:+$("hingeDia").value,hingeSideOffset:+$("hingeSideOffset").value,hingeTopOffset:+$("hingeTopOffset").value,hingeBottomOffset:+$("hingeBottomOffset").value,notes:$("notes").value.trim()};if(!p.length||!p.width||!p.thickness||!p.quantity)return;panels.push(p);render();saveProject();e.target.reset();$("thickness").value=18;$("quantity").value=1;$("hingeDia").value=35;$("hingeSideOffset").value=21.5;$("hingeTopOffset").value=100;$("hingeBottomOffset").value=100;$("grooveReference").value="None";$("edgeBandThickness").value="0.8";$("edges").value="None";});
 $("panelList").addEventListener("click",e=>{const b=e.target.closest("[data-remove]");if(!b)return;panels.splice(+b.dataset.remove,1);panels.forEach((p,i)=>p.id="PN-"+String(i+1).padStart(3,"0"));render();saveProject();});
 $("saveProject").addEventListener("click",saveProject);
-$("newProject").addEventListener("click",()=>{if(!confirm("Clear the current project on this device? Export a backup first if needed."))return;panels=[];["projectName","customer"].forEach(id=>$(id).value="");$("boardLength").value=2440;$("boardWidth").value=1220;$("kerf").value=4;$("trim").value=10;localStorage.removeItem(STORE_KEY);render();$("saveStatus").textContent="New empty project."});
+$("newProject").addEventListener("click",()=>{if(!confirm("Clear the current project on this device? Export a backup first if needed."))return;panels=[];["projectName","customer","projectNotes"].forEach(id=>$(id).value="");$("boardLength").value=2440;$("boardWidth").value=1220;$("kerf").value=4;$("trim").value=10;localStorage.removeItem(STORE_KEY);render();$("saveStatus").textContent="New empty project."});
 function csvCell(v){return '"'+String(v??"").replace(/"/g,'""')+'"';}
 $("exportCsv").addEventListener("click",()=>{const cols=["Panel ID","Panel name","Cabinet","Length mm","Width mm","Thickness mm","Quantity","Material","Colour","Grain","Edge band sides","Groove width mm","Groove depth mm","Groove offset mm","Hinge holes","Hinge diameter mm","Notes"];const rows=panels.map(p=>[p.id,p.name,p.cabinet,p.length,p.width,p.thickness,p.quantity,p.material,p.colour,p.grain,p.edges,p.grooveWidth,p.grooveDepth,p.grooveOffset,p.hinges,p.hingeDia,p.notes]);download("\uFEFF"+[cols,...rows].map(r=>r.map(csvCell).join(",")).join("\r\n"),"d3-smartcut-cutting-list.csv","text/csv;charset=utf-8");});
 $("exportJson").addEventListener("click",()=>download(JSON.stringify(projectData(),null,2),"d3-smartcut-project.json","application/json"));
-$("importJson").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());panels=Array.isArray(d.panels)?d.panels:[];$("projectName").value=d.name||"";$("customer").value=d.customer||"";$("boardLength").value=d.boardLength||2440;$("boardWidth").value=d.boardWidth||1220;$("kerf").value=d.kerf??4;$("trim").value=d.trim??10;render();saveProject();}catch(err){alert("Invalid project JSON file.");}e.target.value="";});
+$("importJson").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());panels=Array.isArray(d.panels)?d.panels:[];$("projectName").value=d.name||"";$("customer").value=d.customer||"";$("projectNotes").value=d.projectNotes||"";$("boardLength").value=d.boardLength||2440;$("boardWidth").value=d.boardWidth||1220;$("kerf").value=d.kerf??4;$("trim").value=d.trim??10;render();saveProject();}catch(err){alert("Invalid project JSON file.");}e.target.value="";});
 function download(content,name,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);}
-function panelSvg(p){
- const W=640,H=420,pad=48,scale=Math.min((W-2*pad)/p.length,(H-2*pad)/p.width),w=p.length*scale,h=p.width*scale,x=(W-w)/2,y=(H-h)/2;let marks="";
- if(p.grooveWidth>0&&p.grooveDepth>0&&p.grooveReference!=="None"){
-  const off=Math.min(p.grooveOffset||0,p.width),gy=y+(p.grooveReference==="B"?p.width-off:off)*scale;
-  marks+='<line x1="'+x+'" y1="'+gy+'" x2="'+(x+w)+'" y2="'+gy+'" stroke="#b3261e" stroke-width="4" stroke-dasharray="10 6"/>';
- }
- for(let i=0;i<(p.hinges||0);i++){
-  const along=p.hinges===1?p.width/2:(p.hingeTopOffset||100)+i*(p.width-(p.hingeTopOffset||100)-(p.hingeBottomOffset||100))/(p.hinges-1);
-  const cx=x+(p.hingeSideOffset||21.5)*scale,cy=y+along*scale;
-  marks+='<circle cx="'+cx+'" cy="'+cy+'" r="'+Math.max(5,(p.hingeDia||35)*scale/2)+'" fill="none" stroke="#175b91" stroke-width="3"/><line x1="'+x+'" y1="'+cy+'" x2="'+cx+'" y2="'+cy+'" stroke="#175b91" stroke-width="1" stroke-dasharray="3 3"/>';
- }
- return '<svg class="panel-svg" viewBox="0 0 640 420" xmlns="http://www.w3.org/2000/svg"><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="#e4d2ac" stroke="#5f4c2e" stroke-width="3"/>'+marks+'<text x="'+(W/2)+'" y="'+(y-16)+'" text-anchor="middle" font-size="15" fill="#111">'+p.length+' mm</text><text x="'+(x+w+15)+'" y="'+(H/2)+'" transform="rotate(90 '+(x+w+15)+' '+(H/2)+')" text-anchor="middle" font-size="15" fill="#111">'+p.width+' mm</text><text x="'+(W/2)+'" y="'+(y+h+25)+'" text-anchor="middle" font-size="13" fill="#111">Grain: '+escapeHtml(p.grain)+' →</text><text x="'+(x+8)+'" y="'+(y+18)+'" font-size="12" fill="#111">A</text><text x="'+(x+w-18)+'" y="'+(y+18)+'" font-size="12" fill="#111">B</text><text x="'+(x+w-18)+'" y="'+(y+h-8)+'" font-size="12" fill="#111">C</text><text x="'+(x+8)+'" y="'+(y+h-8)+'" font-size="12" fill="#111">D</text></svg>';
-}
-$("printDrawings").addEventListener("click",()=>{if(!panels.length){alert("Add at least one panel first.");return;}const data=projectData();const old=document.querySelector(".drawings");if(old)old.remove();const section=document.createElement("section");section.className="drawings";section.innerHTML=panels.map(p=>'<article class="drawing-page"><p class="small-print">D3 INTERIOR DESIGNS · D3 SMARTCUT · '+escapeHtml(data.name||"UNNAMED PROJECT")+'</p><h1>'+escapeHtml(p.id)+' — '+escapeHtml(p.name)+'</h1><div class="drawing-meta"><div><b>Cabinet</b><br>'+escapeHtml(p.cabinet||"—")+'</div><div><b>Finished size</b><br>'+p.length+' × '+p.width+' × '+p.thickness+' mm</div><div><b>Quantity</b><br>'+p.quantity+'</div><div><b>Material / colour</b><br>'+escapeHtml(p.material||"—")+' / '+escapeHtml(p.colour||"—")+'</div><div><b>Grain</b><br>'+escapeHtml(p.grain)+'</div><div><b>Edge band</b><br>'+escapeHtml(p.edges||"None")+' · '+(p.edgeBandThickness||0.8)+' mm</div></div>'+panelSvg(p)+'<div class="drawing-notes"><b>Machining notes</b><br>Groove: '+p.grooveWidth+' mm wide × '+p.grooveDepth+' mm deep; offset from edge A: '+p.grooveOffset+' mm<br>Hinge cup holes: '+p.hinges+' × Ø'+p.hingeDia+' mm<br>Additional notes: '+escapeHtml(p.notes||"—")+'<br><br><b>Workshop verification:</b> Confirm all dimensions, datum edges, machining coordinates, hardware templates, tool sizes and workholding before manufacture.</div><p class="small-print">Drawing is a planning document, not a validated CNC toolpath. Revision 1 · '+new Date().toLocaleDateString()+'</p></article>').join("");document.body.appendChild(section);window.print();setTimeout(()=>section.remove(),1200);});
 $("installHelp").addEventListener("click",()=>$("helpDialog").showModal());$("closeHelp").addEventListener("click",()=>$("helpDialog").close());
 if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("PWA worker registration failed",err)));}
 loadProject();
@@ -44,12 +30,21 @@ function makeSheetPlan(){
  const trim=Number($("trim").value)||0,kerf=Number($("kerf").value)||0;
  const usableL=boardL-2*trim,usableW=boardW-2*trim;
  const pieces=[];
- panels.forEach(p=>{for(let q=0;q<(Number(p.quantity)||1);q++)pieces.push({id:p.id,name:p.name,l:Number(p.length),w:Number(p.width),grain:p.grain,material:p.material||"Unspecified",colour:p.colour||"",thickness:p.thickness||18});});
+ panels.forEach(p=>{for(let q=0;q<(Number(p.quantity)||1);q++)pieces.push({
+  id:p.id,name:p.name,l:Number(p.length),w:Number(p.width),grain:p.grain,
+  material:p.material||"Unspecified",colour:p.colour||"",thickness:p.thickness||18,
+  edges:(p.edges||"None").split(",").filter(x=>x!=="None"),edgeBandThickness:p.edgeBandThickness||0.8,
+  hinges:Number(p.hinges)||0,hingeDia:Number(p.hingeDia)||35,hingeSideOffset:Number(p.hingeSideOffset)||21.5,
+  hingeTopOffset:Number(p.hingeTopOffset)||100,hingeBottomOffset:Number(p.hingeBottomOffset)||100,
+  grooveWidth:Number(p.grooveWidth)||0,grooveDepth:Number(p.grooveDepth)||0,
+  grooveReference:p.grooveReference||"None",grooveOffset:Number(p.grooveOffset)||0,notes:p.notes||""
+ });});
  pieces.sort((a,b)=>(a.material+"|"+a.colour+"|"+a.thickness).localeCompare(b.material+"|"+b.colour+"|"+b.thickness)||Math.max(b.l,b.w)-Math.max(a.l,a.w));
  const sheets=[];let groupKey="",groupSheets=[];
  for(const piece of pieces){
-  const nextGroup=piece.material+"|"+piece.colour+"|"+piece.thickness;if(nextGroup!==groupKey){groupKey=nextGroup;groupSheets=[];}
-  const opts=piece.grain==="Length"?[{l:piece.l,w:piece.w}]:piece.grain==="Width"?[{l:piece.w,w:piece.l}]:[{l:piece.l,w:piece.w},{l:piece.w,w:piece.l}];
+  const nextGroup=piece.material+"|"+piece.colour+"|"+piece.thickness;
+  if(nextGroup!==groupKey){groupKey=nextGroup;groupSheets=[];}
+  const opts=piece.grain==="Length"?[{l:piece.l,w:piece.w,rotated:false}]:piece.grain==="Width"?[{l:piece.w,w:piece.l,rotated:true}]:[{l:piece.l,w:piece.w,rotated:false},{l:piece.w,w:piece.l,rotated:true}];
   let placed=false;
   for(const sheet of groupSheets){
    for(const row of sheet.rows){
@@ -64,7 +59,7 @@ function makeSheetPlan(){
    if(placed)break;
   }
   if(placed)continue;
-  let choice=opts.find(o=>o.l<=usableL&&o.w<=usableW);
+  const choice=opts.find(o=>o.l<=usableL&&o.w<=usableW);
   if(!choice)return {error:"Panel "+piece.id+" ("+piece.l+" × "+piece.w+" mm) cannot fit on the sheet with its grain direction and trim."};
   let sheet=groupSheets.find(s=>s.usedH+(s.rows.length?kerf:0)+choice.w<=usableW);
   if(!sheet){sheet={rows:[],usedH:0,material:piece.material,colour:piece.colour,thickness:piece.thickness};sheets.push(sheet);groupSheets.push(sheet);}
@@ -72,26 +67,89 @@ function makeSheetPlan(){
   sheet.rows.push({y,h:choice.w,x:choice.l,items:[{...piece,...choice,x:0,y}]});
   sheet.usedH=y+choice.w;
  }
- return {sheets,boardL,boardW,usableL,usableW,pieceCount:pieces.length};
+ return {sheets,boardL,boardW,usableL,usableW,pieceCount:pieces.length,kerf,trim};
+}
+function rotateEdges(edges){
+ const map={A:"B",B:"C",C:"D",D:"A"};
+ return edges.map(e=>map[e]||e);
 }
 function sheetSvg(sheet,plan){
- const pad=30,scale=Math.min(900/plan.boardL,450/plan.boardW),w=plan.boardL*scale,h=plan.boardW*scale;
- const items=sheet.rows.flatMap(r=>r.items).map(p=>{
-  const x=pad+(plan.boardL-plan.usableL)/2*scale+p.x*scale,y=pad+(plan.boardW-plan.usableW)/2*scale+p.y*scale,pw=p.l*scale,ph=p.w*scale;
-  return '<rect x="'+x+'" y="'+y+'" width="'+pw+'" height="'+ph+'" fill="#e7d8b8" stroke="#222" stroke-width="1.5"/><text x="'+(x+pw/2)+'" y="'+(y+ph/2-4)+'" text-anchor="middle" font-size="12" fill="#111">'+escapeHtml(p.id)+'</text><text x="'+(x+pw/2)+'" y="'+(y+ph/2+10)+'" text-anchor="middle" font-size="10" fill="#111">'+p.l+' × '+p.w+'</text>';
+ const pad=34,scale=Math.min(900/plan.boardL,450/plan.boardW),w=plan.boardL*scale,h=plan.boardW*scale;
+ const inset=(plan.boardL-plan.usableL)/2*scale,topInset=(plan.boardW-plan.usableW)/2*scale;
+ const pieces=sheet.rows.flatMap(r=>r.items);
+ const marks=pieces.map(p=>{
+  const x=pad+inset+p.x*scale,y=pad+topInset+p.y*scale,pw=p.l*scale,ph=p.w*scale;
+  const edges=p.rotated?rotateEdges(p.edges):p.edges;
+  let detail="";
+  const line=(x1,y1,x2,y2)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#c62828" stroke-width="5"/>';
+  if(edges.includes("A"))detail+=line(x,y,x+pw,y);
+  if(edges.includes("B"))detail+=line(x+pw,y,x+pw,y+ph);
+  if(edges.includes("C"))detail+=line(x,y+ph,x+pw,y+ph);
+  if(edges.includes("D"))detail+=line(x,y,x,y+ph);
+  if(p.hinges>0){
+   for(let i=0;i<p.hinges;i++){
+    const along=p.hinges===1?p.w/2:p.hingeTopOffset+i*(p.w-p.hingeTopOffset-p.hingeBottomOffset)/(p.hinges-1);
+    let hx,hy;
+    if(!p.rotated){hx=x+p.hingeSideOffset*scale;hy=y+along*scale;}
+    else{hx=x+along*scale;hy=y+p.hingeSideOffset*scale;}
+    const radius=Math.max(2.2,p.hingeDia*scale/2);
+    detail+='<circle cx="'+hx+'" cy="'+hy+'" r="'+radius+'" fill="none" stroke="#075ca8" stroke-width="2.5"/><circle cx="'+hx+'" cy="'+hy+'" r="1.8" fill="#075ca8"/>';
+   }
+  }
+  if(p.grain==="No restriction")detail+='<text x="'+(x+pw/2)+'" y="'+(y+ph/2+4)+'" text-anchor="middle" font-size="10" fill="#444">NO GRAIN</text>';
+  else{
+   const horizontal=(p.grain==="Length"&&!p.rotated)||(p.grain==="Width"&&p.rotated);
+   const x1=horizontal?x+pw*.28:x+pw/2,y1=horizontal?y+ph/2:y+ph*.28;
+   const x2=horizontal?x+pw*.72:x+pw/2,y2=horizontal?y+ph/2:y+ph*.72;
+   detail+='<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#16803c" stroke-width="2.5"/>';
+   if(horizontal)detail+='<path d="M '+(x2-7)+' '+(y2-5)+' L '+x2+' '+y2+' L '+(x2-7)+' '+(y2+5)+'" fill="none" stroke="#16803c" stroke-width="2.5"/>';
+   else detail+='<path d="M '+(x2-5)+' '+(y2-7)+' L '+x2+' '+y2+' L '+(x2+5)+' '+(y2-7)+'" fill="none" stroke="#16803c" stroke-width="2.5"/>';
+  }
+  detail+='<text x="'+(x+pw/2)+'" y="'+(y+ph/2-5)+'" text-anchor="middle" font-size="11" fill="#111">'+escapeHtml(p.id)+'</text><text x="'+(x+pw/2)+'" y="'+(y+ph/2+10)+'" text-anchor="middle" font-size="9" fill="#111">'+p.l+' × '+p.w+'</text>';
+  return detail;
  }).join("");
- return '<svg class="sheet-svg" viewBox="0 0 '+(w+pad*2)+' '+(h+pad*2)+'" xmlns="http://www.w3.org/2000/svg"><rect x="'+pad+'" y="'+pad+'" width="'+w+'" height="'+h+'" fill="#fff" stroke="#111" stroke-width="2"/>'+items+'</svg>';
+ return '<svg class="sheet-svg" viewBox="0 0 '+(w+pad*2)+' '+(h+pad*2)+'" xmlns="http://www.w3.org/2000/svg"><rect x="'+pad+'" y="'+pad+'" width="'+w+'" height="'+h+'" fill="#fff" stroke="#111" stroke-width="2"/>'+marks+'</svg>';
+}
+function sheetSignature(sheet){
+ return sheet.rows.flatMap(r=>r.items).map(p=>[
+  Math.round(p.x),Math.round(p.y),Math.round(p.l),Math.round(p.w),p.grain,p.rotated,
+  p.edges.join(","),p.edgeBandThickness,p.hinges,p.hingeDia,p.hingeSideOffset,p.hingeTopOffset,p.hingeBottomOffset
+ ].join(":")).sort().join("|")+"#"+sheet.material+"#"+sheet.colour+"#"+sheet.thickness;
+}
+function edgeBandTotals(){
+ const totals={"0.8":0,"2":0};
+ panels.forEach(p=>{
+  const sides=(p.edges||"None").split(",").filter(s=>s!=="None");
+  const length=sides.reduce((n,s)=>n+((s==="A"||s==="C")?Number(p.length):Number(p.width)),0)*(Number(p.quantity)||1);
+  const key=String(Number(p.edgeBandThickness)||0.8);totals[key]=(totals[key]||0)+length;
+ });
+ return totals;
 }
 $("printSheets").addEventListener("click",()=>{
  if(!panels.length){alert("Add at least one panel first.");return;}
  const plan=makeSheetPlan();if(plan.error){alert(plan.error);return;}
- const edge=edgeBandTotal(),section=document.createElement("section");section.className="sheet-report";
- section.innerHTML='<header><h1>D3 SmartCut — Sheet layout</h1><p>'+escapeHtml($("projectName").value||"Unnamed project")+' · '+escapeHtml($("customer").value||"")+'</p></header>'+
- '<div class="sheet-summary"><div><b>'+plan.pieceCount+'</b><small>Total panels / pieces</small></div><div><b>'+plan.sheets.length+'</b><small>'+plan.boardL+' × '+plan.boardW+' mm sheets required</small></div><div><b>'+edge.toFixed(1)+' mm</b><small>Total edge band length</small></div></div>'+
- '<p class="sheet-caveat">Simple shelf layout. Selected grain direction, trim and kerf are considered. Check all dimensions and sheet layouts before cutting. This is not an industrial nesting optimiser.</p>'+
- plan.sheets.map((s,i)=>'<article class="sheet-page"><h2>Sheet '+(i+1)+' of '+plan.sheets.length+' · '+plan.boardL+' × '+plan.boardW+' mm</h2><p>Material: '+escapeHtml(s.material)+' · Colour: '+escapeHtml(s.colour||"—")+' · Thickness: '+s.thickness+' mm</p>'+sheetSvg(s,plan)+'<p>'+s.rows.reduce((n,r)=>n+r.items.length,0)+' pieces on this sheet</p></article>').join("")+
- '<section class="sheet-table"><h2>Panel summary</h2><table><thead><tr><th>Panel</th><th>Size (mm)</th><th>Qty</th><th>Edge band</th></tr></thead><tbody>'+
- panels.map(p=>'<tr><td>'+escapeHtml(p.id)+' · '+escapeHtml(p.name)+'</td><td>'+p.length+' × '+p.width+' × '+p.thickness+'</td><td>'+p.quantity+'</td><td>'+escapeHtml(p.edges||"None")+' · '+(p.edgeBandThickness||0.8)+' mm</td></tr>').join("")+
- '</tbody></table></section>';
- document.body.appendChild(section);window.print();setTimeout(()=>section.remove(),1500);
+ const grouped=new Map();
+ plan.sheets.forEach(s=>{const key=sheetSignature(s);if(!grouped.has(key))grouped.set(key,{sheet:s,count:0});grouped.get(key).count++;});
+ const unique=[...grouped.values()];
+ const totalPanelArea=panels.reduce((n,p)=>n+Number(p.length)*Number(p.width)*(Number(p.quantity)||1),0);
+ const totalSheetArea=plan.sheets.length*plan.boardL*plan.boardW;
+ const waste=Math.max(0,totalSheetArea-totalPanelArea);
+ const wastePct=totalSheetArea?100*waste/totalSheetArea:0;
+ const edge=edgeBandTotals(),totalEdge=edge["0.8"]+edge["2"];
+ const totalQty=plan.pieceCount;
+ const project=projectData();
+ const section=document.createElement("section");section.className="sheet-report";
+ const panelRows=panels.map(p=>'<tr><td>'+escapeHtml(p.id)+' · '+escapeHtml(p.name)+'</td><td>'+p.length+' × '+p.width+' × '+p.thickness+'</td><td>'+p.quantity+'</td><td>'+escapeHtml(p.edges||"None")+' · '+(p.edgeBandThickness||0.8)+' mm</td><td>'+escapeHtml(p.notes||"—")+'</td></tr>').join("");
+ const sheetPages=unique.map((entry,i)=>{
+  const s=entry.sheet,parts=s.rows.reduce((n,r)=>n+r.items.length,0);
+  return '<article class="sheet-page"><h2>Layout '+(i+1)+' of '+unique.length+' · '+plan.boardL+' × '+plan.boardW+' mm</h2><p class="sheet-meta">Material: '+escapeHtml(s.material)+' · Colour: '+escapeHtml(s.colour||"—")+' · Thickness: '+s.thickness+' mm · <b>Print quantity: '+entry.count+' identical sheet'+(entry.count===1?"":"s")+'</b></p>'+sheetSvg(s,plan)+'<p>'+parts+' panels in this layout · Red: edge band · Blue: hinge holes · Green: grain direction</p></article>';
+ }).join("");
+ section.innerHTML=
+ '<section class="summary-page"><header><h1>D3 Interior Designs — D3 SmartCut</h1><h2>Workshop cutting report</h2><p><b>Project:</b> '+escapeHtml(project.name||"Unnamed project")+'<br><b>Customer reference:</b> '+escapeHtml(project.customer||"—")+'</p></header>'+
+ '<div class="sheet-summary"><div><b>'+totalQty+'</b><small>Total panel pieces</small></div><div><b>'+plan.sheets.length+'</b><small>Total '+plan.boardL+' × '+plan.boardW+' mm sheets</small></div><div><b>'+totalEdge.toFixed(0)+' mm</b><small>Total edge band length</small></div><div><b>'+(waste/1000000).toFixed(3)+' m²</b><small>Total cutting waste · '+wastePct.toFixed(1)+'%</small></div><div><b>'+(totalPanelArea/1000000).toFixed(3)+' m²</b><small>Total panel area</small></div><div><b>'+unique.length+'</b><small>Different sheet layouts to print</small></div></div>'+
+ '<p class="waste-note">Cutting waste is estimated as total full-sheet area minus the finished panel area. It includes trim, kerf and remaining offcuts; it is an area estimate, not a measured waste-bin quantity.</p>'+
+ '<h3>Edge band totals</h3><p>0.8 mm: '+(edge["0.8"]||0).toFixed(0)+' mm &nbsp; | &nbsp; 2 mm: '+(edge["2"]||0).toFixed(0)+' mm</p>'+
+ '<h3>Panel dimensions and notes</h3><table><thead><tr><th>Panel</th><th>Size L × W × T (mm)</th><th>Qty</th><th>Edge band</th><th>Notes</th></tr></thead><tbody>'+panelRows+'</tbody></table>'+
+ '<h3>Project notes</h3><p class="project-note">'+escapeHtml(project.projectNotes||"—")+'</p></section>'+sheetPages;
+ document.body.appendChild(section);window.print();setTimeout(()=>section.remove(),1800);
 });
