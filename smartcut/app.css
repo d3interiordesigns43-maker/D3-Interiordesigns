@@ -33,3 +33,19 @@
  .sheet-page .sheet-meta,.sheet-page p{font-size:8pt}
  .sheet-svg{width:100%;height:auto;max-height:220mm;display:block}
 }
+
+/* Individual panel drawing print */
+.drawings{display:none}
+@media print{
+ body.printing-drawings{background:#fff}
+ body.printing-drawings>*:not(.drawings){display:none!important}
+ body.printing-drawings>.drawings{display:block!important;padding:10mm;color:#111}
+ body.printing-drawings .drawing-page{break-after:page;page-break-after:always;padding:4mm 0}
+ body.printing-drawings .drawing-page:last-child{break-after:auto;page-break-after:auto}
+ body.printing-drawings .drawing-page h1{font-size:20pt;margin:3mm 0}
+ body.printing-drawings .drawing-meta{display:grid;grid-template-columns:repeat(2,1fr);gap:3mm;margin:4mm 0}
+ body.printing-drawings .drawing-meta div{border:1px solid #888;padding:3mm;font-size:9pt}
+ body.printing-drawings .panel-svg{width:100%;max-height:150mm;display:block}
+ body.printing-drawings .drawing-notes{font-size:9pt;line-height:1.5;margin-top:4mm}
+ body.printing-drawings .small-print{font-size:8pt;color:#555}
+}
