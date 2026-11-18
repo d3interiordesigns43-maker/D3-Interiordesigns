@@ -34,7 +34,7 @@
         <label>Board width (mm)<input id="boardWidth" type="number" min="1" value="1220"></label>
         <label>Kerf (mm)<input id="kerf" type="number" min="0" step="0.1" value="4"></label>
         <label>Trim allowance (mm)<input id="trim" type="number" min="0" step="0.1" value="10"></label>
-        <label>Stock sheet quantity<input id="stockQty" type="number" min="0" step="1" value="0"></label>
+        <label>Stock sheet quantity (0 = unlimited)<input id="stockQty" type="number" min="0" step="1" value="0"></label>
       </div>
       <div class="actions">
         <button id="saveProject" class="primary">Save project on this device</button>
@@ -95,7 +95,7 @@
       <p><b>WoodWOP:</b> planned as a separate DXF / supported WoodWOP workflow. This starter does not create MPR/MPRX files.</p>
       <p><b>Edge banding:</b> core-board dimensions are automatically reduced by the selected tape thickness on each selected edge. Finished dimensions remain as entered.</p>
       <p><b>Hinge drilling:</b> adjustable planning coordinates are shown on panel drawings. Confirm every dimension against the exact hinge manufacturer template before drilling; this is not CNC-ready output.</p>
-      <p><b>Nesting:</b> no production-grade optimiser in this starter. Check all dimensions, grain direction, kerf, trim and workholding before cutting.</p>
+      <p><b>Panel-saw optimizer:</b> a guillotine-style heuristic planner is included. It groups by material and thickness, considers core dimensions, kerf, trim and grain restrictions, and reports sheet layouts and unplaced parts. It is a planning aid, not a validated saw cut sequence.</p>
     </section>
     <footer>D3 Interior Designs · D3 SmartCut · Local-first prototype</footer>
   </main>
