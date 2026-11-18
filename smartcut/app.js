@@ -71,7 +71,7 @@ $("optimizerResults").addEventListener("click",e=>{
  const rows=[["Sheet","Material","Thickness mm","Panel ID","Panel name","X from usable top-left mm","Y from usable top-left mm","Cut length mm","Cut width mm","Rotated","Grain"]];
  latestOptimisation.sheets.forEach(sh=>sh.placements.forEach(p=>rows.push([sh.number,sh.material,sh.thickness,p.id,p.name,p.x.toFixed(1),p.y.toFixed(1),p.cutLength.toFixed(1),p.cutWidth.toFixed(1),p.rotated?"Yes":"No",p.grain])));
  latestOptimisation.unplaced.forEach(p=>rows.push(["NOT PLACED",p.material,p.thickness,p.id,p.name,"","","","","",p.grain]));
- download("\\uFEFF"+rows.map(r=>r.map(csvCell).join(",")).join("\\r\\n"),"d3-smartcut-optimized-layout.csv","text/csv;charset=utf-8");
+ download("\uFEFF"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n"),"d3-smartcut-optimized-layout.csv","text/csv;charset=utf-8");
 });
 
 $("installHelp").addEventListener("click",()=> $("helpDialog").showModal());$("closeHelp").addEventListener("click",()=> $("helpDialog").close());
