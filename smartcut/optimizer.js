@@ -44,7 +44,7 @@
           }
         }
         if(!best){
-          if(maxSheets>0&&sheets.length>=maxSheets){unplaced.push(part);continue;}
+          if(maxSheets>0&&sheets.filter(s=>s.groupKey===group.key).length>=maxSheets){unplaced.push(part);continue;}
           const sh={number:sheets.length+1,groupKey:group.key,material:group.material,thickness:group.thickness,stockLength:stockL,stockWidth:stockW,usableLength:usableL,usableWidth:usableW,free:[{x:0,y:0,w:usableL,h:usableW}],placements:[]};
           sheets.push(sh);
           const f=sh.free[0],orientations=[{w:part.length,h:part.width,rotated:false}];
