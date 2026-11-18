@@ -45,12 +45,14 @@ Cloudflare Access protects the hostname at the edge. The current app stores proj
 
 - Project metadata and panel schedule in millimetres.
 - Board size defaults to 2440 × 1220 mm; kerf and trim fields.
-- Panel attributes: dimensions, quantity, thickness, material, colour, grain, edge band sides, basic groove fields and hinge count/diameter.
+- Panel attributes: finished dimensions, quantity, thickness, material, colour, grain, selectable A/B/C/D edge band sides (0.8 mm or 2.0 mm), groove fields and adjustable hinge count, cup diameter, edge offset, end offset and cup depth.
+- Automatic core-board dimension calculation: subtracts the selected edge-tape thickness from the finished size for each selected edge; cutting-list CSV includes both finished and core dimensions.
+- Hinge planning coordinates are included in panel drawings and CSV exports. Hardware-specific drilling must be verified against the exact hinge manufacturer template.
 - Local browser saving, JSON backup/restore and CSV cutting-list export.
 - Browser print layout creates a separate print page for each panel; choose Save as PDF in the print dialog.
 - Service worker caches the static app shell for limited offline reopening.
 
-Not yet implemented: authenticated cloud project storage, multi-user roles, validated cutting optimisation, complete drilling coordinate editor, hardware-specific hinge templates, DXF export, WoodWOP MPR/MPRX export, or Mach3 G-code. The current groove/hinge fields are notes/illustrations, not verified machining coordinates. Do not use generated drawings or code as machine-ready instructions.
+Not yet implemented: authenticated cloud project storage, multi-user roles, validated cutting optimisation, manufacturer-specific hinge templates, DXF export, WoodWOP MPR/MPRX export, or Mach3 G-code. The current groove/hinge fields are notes/illustrations, not verified machining coordinates. Do not use generated drawings or code as machine-ready instructions.
 
 ## Updating
 
