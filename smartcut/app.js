@@ -34,6 +34,46 @@ $("importJson").addEventListener("change",async e=>{const f=e.target.files[0];if
 function download(content,name,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);}
 function panelSvg(raw){const p=normalisePanel(raw),W=640,H=420,pad=48,scale=Math.min((W-2*pad)/p.length,(H-2*pad)/p.width),w=p.length*scale,h=p.width*scale,x=(W-w)/2,y=(H-h)/2;let marks="";if(p.grooveWidth>0&&p.grooveDepth>0){const gy=y+Math.min(p.grooveOffset,p.width)*scale;marks+='<line x1="'+x+'" y1="'+gy+'" x2="'+(x+w)+'" y2="'+gy+'" stroke="#b3261e" stroke-width="4" stroke-dasharray="10 6"/>';}hingePositions(p).forEach(v=>{const cx=x+v.x*scale,cy=y+v.y*scale,r=Math.max(3.5,p.hingeDia*scale/2);marks+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#175b91" stroke-width="2.5"/><line x1="'+(cx-5)+'" y1="'+cy+'" x2="'+(cx+5)+'" y2="'+cy+'" stroke="#175b91"/><line x1="'+cx+'" y1="'+(cy-5)+'" x2="'+cx+'" y2="'+(cy+5)+'" stroke="#175b91"/>';});const s=coreSize(p);return '<svg class="panel-svg" viewBox="0 0 640 420" xmlns="http://www.w3.org/2000/svg"><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="#e4d2ac" stroke="#5f4c2e" stroke-width="3"/>'+marks+'<text x="'+(W/2)+'" y="'+(y-16)+'" text-anchor="middle" font-size="15" fill="#111">Finished L '+p.length+' mm · Core '+s.length.toFixed(1)+' mm</text><text x="'+(x+w+15)+'" y="'+(H/2)+'" transform="rotate(90 '+(x+w+15)+' '+(H/2)+')" text-anchor="middle" font-size="15" fill="#111">Finished W '+p.width+' mm · Core '+s.width.toFixed(1)+' mm</text><text x="'+(W/2)+'" y="'+(y+h+25)+'" text-anchor="middle" font-size="13" fill="#111">Grain: '+escapeHtml(p.grain)+' →</text><text x="'+(x+8)+'" y="'+(y+18)+'" font-size="12" fill="#111">A</text><text x="'+(x+w-18)+'" y="'+(y+18)+'" font-size="12" fill="#111">B</text><text x="'+(x+w-18)+'" y="'+(y+h-8)+'" font-size="12" fill="#111">C</text><text x="'+(x+8)+'" y="'+(y+h-8)+'" font-size="12" fill="#111">D</text></svg>';}
 $("printDrawings").addEventListener("click",()=>{if(!panels.length){alert("Add at least one panel first.");return;}const data=projectData();const old=document.querySelector(".drawings");if(old)old.remove();const section=document.createElement("section");section.className="drawings";section.innerHTML=panels.map(raw=>{const p=normalisePanel(raw),s=coreSize(p),hp=hingePositions(p).map((v,i)=>"H"+(i+1)+": X "+v.x.toFixed(1)+" / Y "+v.y.toFixed(1)+" mm").join("<br>");return '<article class="drawing-page"><p class="small-print">D3 INTERIOR DESIGNS · D3 SMARTCUT · '+escapeHtml(data.name||"UNNAMED PROJECT")+'</p><h1>'+escapeHtml(p.id)+' — '+escapeHtml(p.name)+'</h1><div class="drawing-meta"><div><b>Cabinet</b><br>'+escapeHtml(p.cabinet||"—")+'</div><div><b>Finished size</b><br>'+p.length+' × '+p.width+' × '+p.thickness+' mm</div><div><b>Core-board cut size</b><br>'+s.length.toFixed(1)+' × '+s.width.toFixed(1)+' mm</div><div><b>Quantity</b><br>'+p.quantity+'</div><div><b>Material / colour</b><br>'+escapeHtml(p.material||"—")+' / '+escapeHtml(p.colour||"—")+'</div><div><b>Edge band</b><br>'+(p.edgeSides.join(", ")||"None")+' · '+p.edgeThickness+' mm</div></div>'+panelSvg(p)+'<div class="drawing-notes"><b>Hinge drilling plan (coordinates from top-left panel datum)</b><br>Holes: '+p.hinges+' × Ø'+p.hingeDia+' mm · cup depth '+p.hingeDepth+' mm · centre offset from hinge edge '+p.hingeEdgeOffset+' mm<br>First/last centre from top/bottom: '+p.hingeEndOffset+' mm<br>'+ (hp||"No hinge holes selected.")+'<br><br><b>Groove</b><br>'+p.grooveWidth+' mm wide × '+p.grooveDepth+' mm deep; offset from edge A: '+p.grooveOffset+' mm<br><b>Additional notes:</b> '+escapeHtml(p.notes||"—")+'<br><br><b>Workshop verification:</b> Hinge cup distance, screw pattern and depth vary by hardware model. Confirm manufacturer template and test on scrap before production. Drawing is not a validated CNC toolpath.</div><p class="small-print">Planning drawing · '+new Date().toLocaleDateString()+'</p></article>';}).join("");document.body.appendChild(section);window.print();setTimeout(()=>section.remove(),1200);});
+
+let latestOptimisation=null;
+function optimiserSheetSvg(sheet){
+ const W=680,H=430,pad=34,scale=Math.min((W-2*pad)/sheet.usableLength,(H-2*pad)/sheet.usableWidth);
+ const sw=sheet.usableLength*scale,sh=sheet.usableWidth*scale,ox=(W-sw)/2,oy=(H-sh)/2;
+ const parts=sheet.placements.map(p=>{
+  const x=ox+p.x*scale,y=oy+p.y*scale,w=p.cutLength*scale,h=p.cutWidth*scale;
+  const label=escapeHtml(p.id+" "+p.name);
+  return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="#e4d2ac" stroke="#5f4c2e" stroke-width="1.5"><title>'+label+' · '+p.cutLength.toFixed(1)+' × '+p.cutWidth.toFixed(1)+' mm</title></rect><text x="'+(x+w/2)+'" y="'+(y+h/2-3)+'" text-anchor="middle" font-size="10" fill="#222">'+label.slice(0,34)+'</text><text x="'+(x+w/2)+'" y="'+(y+h/2+11)+'" text-anchor="middle" font-size="9" fill="#444">'+p.cutLength.toFixed(0)+' × '+p.cutWidth.toFixed(0)+'</text>';
+ }).join("");
+ const free=sheet.free.map(r=>'<rect x="'+(ox+r.x*scale)+'" y="'+(oy+r.y*scale)+'" width="'+(r.w*scale)+'" height="'+(r.h*scale)+'" fill="#e8f0e8" stroke="#7a967a" stroke-dasharray="4 3"/>').join("");
+ return '<svg class="optimiser-svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Cutting layout sheet '+sheet.number+'"><rect x="'+ox+'" y="'+oy+'" width="'+sw+'" height="'+sh+'" fill="#f7f7f5" stroke="#222" stroke-width="2"/>'+free+parts+'<text x="'+(W/2)+'" y="18" text-anchor="middle" font-size="12" fill="#555">Usable area '+sheet.usableLength.toFixed(0)+' × '+sheet.usableWidth.toFixed(0)+' mm · Trim '+latestOptimisation.settings.trim+' mm</text></svg>';
+}
+function showOptimisation(result){
+ const s=result.stats;
+ const fmt=n=>Math.round(n).toLocaleString("en-US");
+ const cards=[["Sheets used",s.sheetsUsed],["Parts placed",s.partsPlaced],["Not placed",s.partsUnplaced],["Sheet utilisation",s.utilisation.toFixed(1)+"%"],["Part area",fmt(s.partArea)+" mm²"],["Estimated offcuts",fmt(s.offcutArea)+" mm²"]];
+ $("optimizerResults").innerHTML='<div class="optimizer-stats">'+cards.map(v=>'<div class="optimizer-stat"><b>'+v[1]+'</b><small>'+v[0]+'</small></div>').join("")+'</div>'+
+  '<p class="hint">Estimated cut count: '+s.cutCount+' · Approx. summed part-edge length: '+fmt(s.cutLength)+' mm. These are planning indicators, not the saw operator’s validated cut sequence.</p>'+
+  result.sheets.map(sh=>'<article class="optimizer-sheet"><div class="section-head"><b>Sheet '+sh.number+'</b><span class="tag">'+escapeHtml(sh.material)+' · '+sh.thickness+' mm</span></div>'+optimiserSheetSvg(sh)+'<p class="hint">'+sh.placements.length+' parts · '+sh.free.length+' reusable offcut area(s)</p><div class="optimizer-parts">'+sh.placements.map(p=>'<span>'+escapeHtml(p.id)+' · '+escapeHtml(p.name)+' — '+p.cutLength.toFixed(1)+' × '+p.cutWidth.toFixed(1)+' mm'+(p.rotated?' (rotated)':'')+'</span>').join("")+'</div></article>').join("")+
+  (result.unplaced.length?'<div class="optimizer-warning"><b>Parts that did not fit / stock limit reached</b><ul>'+result.unplaced.map(p=>'<li>'+escapeHtml(p.id)+' '+escapeHtml(p.name)+' — '+p.length+' × '+p.width+' mm · '+escapeHtml(p.material)+' · '+p.thickness+' mm</li>').join("")+'</ul></div>':'<p class="hint">All scheduled parts were placed within the available stock count.</p>')+
+  '<button id="exportOptimizerCsv" class="secondary full" type="button">Export optimized layout CSV</button>';
+}
+$("runOptimizer").addEventListener("click",()=>{
+ try{
+  if(!panels.length){$("optimizerStatus").textContent="Add at least one panel before optimizing.";return;}
+  if(!window.D3SmartCutOptimizer)throw new Error("Optimizer module did not load. Refresh the page and try again.");
+  latestOptimisation=window.D3SmartCutOptimizer.optimise(projectData());
+  showOptimisation(latestOptimisation);
+  $("optimizerStatus").textContent="Optimization complete. Review every sheet layout and any unplaced parts.";
+ }catch(err){console.error("D3 SmartCut optimizer error",err);$("optimizerStatus").textContent=err.message||"Could not optimize this project.";$("optimizerResults").innerHTML="";}
+});
+$("optimizerResults").addEventListener("click",e=>{
+ if(e.target.id!=="exportOptimizerCsv"||!latestOptimisation)return;
+ const rows=[["Sheet","Material","Thickness mm","Panel ID","Panel name","X from usable top-left mm","Y from usable top-left mm","Cut length mm","Cut width mm","Rotated","Grain"]];
+ latestOptimisation.sheets.forEach(sh=>sh.placements.forEach(p=>rows.push([sh.number,sh.material,sh.thickness,p.id,p.name,p.x.toFixed(1),p.y.toFixed(1),p.cutLength.toFixed(1),p.cutWidth.toFixed(1),p.rotated?"Yes":"No",p.grain])));
+ latestOptimisation.unplaced.forEach(p=>rows.push(["NOT PLACED",p.material,p.thickness,p.id,p.name,"","","","","",p.grain]));
+ download("\\uFEFF"+rows.map(r=>r.map(csvCell).join(",")).join("\\r\\n"),"d3-smartcut-optimized-layout.csv","text/csv;charset=utf-8");
+});
+
 $("installHelp").addEventListener("click",()=> $("helpDialog").showModal());$("closeHelp").addEventListener("click",()=> $("helpDialog").close());
 if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("PWA worker registration failed",err)));}
 loadProject();
