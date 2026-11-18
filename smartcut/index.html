@@ -81,6 +81,14 @@
         <label class="file-button">Import project JSON<input id="importJson" type="file" accept="application/json"></label>
       </div>
     </section>
+    <section class="card" id="optimizerCard">
+      <div class="section-head"><h2>Panel-saw cutting optimizer</h2><span class="tag">MM · PANEL SAW</span></div>
+      <p class="muted">Calculate sheet layouts from the panel schedule. Parts are grouped by material and thickness; kerf, trim and grain direction are considered.</p>
+      <div class="actions"><button id="runOptimizer" class="primary full" type="button">Optimise cutting layout</button></div>
+      <p id="optimizerStatus" class="hint" aria-live="polite">Add panels, then run the optimizer. Results are calculated in this browser.</p>
+      <div id="optimizerResults" class="optimizer-results" aria-live="polite"></div>
+      <p class="hint">Planning estimate only. Confirm saw fence sequence, blade kerf, sheet squareness, clamps and safe handling before cutting. This does not generate a machine-control program.</p>
+    </section>
     <section class="card notice">
       <h2>Machine output status</h2>
       <p><b>Mach3 G-code:</b> not enabled. A verified machine profile, origin, axis directions, tool table, spindle control and dry-run validation are required first.</p>
@@ -92,6 +100,7 @@
     <footer>D3 Interior Designs · D3 SmartCut · Local-first prototype</footer>
   </main>
   <dialog id="helpDialog"><div class="dialog-inner"><h2>Install D3 SmartCut on iPhone</h2><ol><li>Open this address in <b>Safari</b>.</li><li>Tap the Share icon.</li><li>Choose <b>Add to Home Screen</b>.</li><li>Keep the name D3 SmartCut and tap Add.</li></ol><p>Sign in through the workshop access page when prompted. After the first successful load, the app shell can open offline; project data remains on this iPhone.</p><button id="closeHelp" class="primary full">Close</button></div></dialog>
+  <script src="./optimizer.js" defer></script>
   <script src="./app.js" defer></script>
 </body>
 </html>
