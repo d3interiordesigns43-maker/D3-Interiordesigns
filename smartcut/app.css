@@ -9,3 +9,27 @@
 .field-note{grid-column:1/-1;margin:-4px 0 4px;color:#777;font-size:11px;line-height:1.45}
 .sheet-report{display:none}
 @media print{body:has(.sheet-report){background:#fff}body:has(.sheet-report)>.topbar,body:has(.sheet-report)>.shell,body:has(.sheet-report)>dialog{display:none!important}body:has(.sheet-report)>.sheet-report{display:block!important;padding:10mm;color:#111}.sheet-report h1{font-size:22pt;margin:0 0 4mm}.sheet-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:5mm;margin:5mm 0}.sheet-summary div{border:1px solid #888;padding:4mm}.sheet-summary b{display:block;font-size:18pt}.sheet-summary small{font-size:9pt}.sheet-caveat{font-size:9pt;line-height:1.4;border:1px solid #aaa;padding:3mm}.sheet-page{break-after:page;page-break-after:always}.sheet-page h2{font-size:15pt}.sheet-svg{width:100%;height:auto;max-height:220mm}.sheet-table{break-before:page}.sheet-table table{width:100%;border-collapse:collapse}.sheet-table th,.sheet-table td{border:1px solid #888;padding:5px;text-align:left;font-size:9pt}}
+
+.sheet-report{display:none}
+@media print{
+ body:has(.sheet-report)>.topbar,body:has(.sheet-report)>.shell,body:has(.sheet-report)>dialog{display:none!important}
+ body:has(.sheet-report)>.sheet-report{display:block!important;padding:9mm;color:#111}
+ .summary-page{display:block;break-after:page;page-break-after:always}
+ .summary-page h1{font-size:21pt;margin:0 0 3mm}
+ .summary-page header h2{font-size:15pt;margin:0 0 5mm}
+ .summary-page header p{font-size:10pt;line-height:1.5}
+ .sheet-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:3mm;margin:4mm 0}
+ .sheet-summary div{border:1px solid #888;padding:3mm}
+ .sheet-summary b{display:block;font-size:15pt}
+ .sheet-summary small{font-size:8pt}
+ .summary-page h3{font-size:11pt;margin:4mm 0 2mm}
+ .summary-page table{width:100%;border-collapse:collapse}
+ .summary-page th,.summary-page td{border:1px solid #888;padding:3px;text-align:left;font-size:7.5pt;vertical-align:top}
+ .summary-page .waste-note,.summary-page p{font-size:8pt;line-height:1.35}
+ .summary-page .project-note{border:1px solid #aaa;padding:3mm;min-height:10mm}
+ .sheet-page{break-after:page;page-break-after:always;padding-top:2mm}
+ .sheet-page:last-child{break-after:auto;page-break-after:auto}
+ .sheet-page h2{font-size:14pt;margin:0 0 2mm}
+ .sheet-page .sheet-meta,.sheet-page p{font-size:8pt}
+ .sheet-svg{width:100%;height:auto;max-height:220mm;display:block}
+}
