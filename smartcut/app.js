@@ -6,7 +6,7 @@ function loadProject(){try{const d=JSON.parse(localStorage.getItem(STORE_KEY)||l
 function saveProject(){try{localStorage.setItem(STORE_KEY,JSON.stringify(projectData()));$("saveStatus").textContent="Saved on this device at "+new Date().toLocaleTimeString()+". This does not sync to other devices."; }catch(e){$("saveStatus").textContent="Could not save. Export a JSON backup and check device storage.";}}
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function render(){ const totalPieces=panels.reduce((n,p)=>n+(Number(p.quantity)||1),0);$("panelCount").textContent=totalPieces+" pieces · "+panels.length+" panel types";$("panelList").innerHTML=panels.length?panels.map((p,i)=>'<div class="panel-row"><div><strong>'+escapeHtml(p.id)+" · "+escapeHtml(p.name)+'</strong><small>'+p.length+' × '+p.width+' × '+p.thickness+' mm · Qty '+p.quantity+' · '+escapeHtml(p.material||"Material not set")+'</small></div><button class="delete" data-remove="'+i+'" aria-label="Delete '+escapeHtml(p.id)+'">Delete</button></div>').join(""):'<p class="empty">No panels yet. Add your first panel above.</p>'; }
-$("panelForm").addEventListener("submit",e=>{e.preventDefault();const p={id:"PN-"+String(panels.length+1).padStart(3,"0"),name:$("panelName").value.trim(),cabinet:$("cabinet").value.trim(),length:+$("length").value,width:+$("width").value,thickness:+$("thickness").value,quantity:+$("quantity").value,material:$("material").value.trim(),colour:$("colour").value.trim(),grain:$("grain").value,edges:$("edges").value,edgeBandThickness:+$("edgeBandThickness").value,grooveWidth:+$("grooveWidth").value,grooveDepth:+$("grooveDepth").value,grooveReference:$("grooveReference").value,grooveOffset:+$("grooveOffset").value,hinges:+$("hinges").value,hingeDia:+$("hingeDia").value,hingeSideOffset:+$("hingeSideOffset").value,hingeTopOffset:+$("hingeTopOffset").value,hingeBottomOffset:+$("hingeBottomOffset").value,hardware:$("hardware").value.trim(),notes:$("notes").value.trim()};if(!p.length||!p.width||!p.thickness||!p.quantity)return;panels.push(p);render();saveProject();e.target.reset();$("thickness").value=18;$("quantity").value=1;$("hingeDia").value=35;$("hingeSideOffset").value=21.5;$("hingeTopOffset").value=100;$("hingeBottomOffset").value=100;$("grooveReference").value="None";$("edgeBandThickness").value="0.8";$("edges").value="None";});
+$("panelForm").addEventListener("submit",e=>{e.preventDefault();const p={id:"PN-"+String(panels.length+1).padStart(3,"0"),name:$("panelName").value.trim(),cabinet:$("cabinet").value.trim(),length:+$("length").value,width:+$("width").value,thickness:+$("thickness").value,quantity:+$("quantity").value,material:$("material").value.trim(),colour:$("colour").value.trim(),grain:$("grain").value,edges:$("edges").value,edgeBandThickness:+$("edgeBandThickness").value,grooveWidth:+$("grooveWidth").value,grooveDepth:+$("grooveDepth").value,grooveReference:$("grooveReference").value,grooveOffset:+$("grooveOffset").value,hinges:+$("hinges").value,hingeDia:+$("hingeDia").value,hingeSide:$("hingeSide").value,hingeSideOffset:+$("hingeSideOffset").value,hingeTopOffset:+$("hingeTopOffset").value,hingeBottomOffset:+$("hingeBottomOffset").value,hardware:$("hardware").value.trim(),notes:$("notes").value.trim()};if(!p.length||!p.width||!p.thickness||!p.quantity)return;panels.push(p);render();saveProject();e.target.reset();$("thickness").value=18;$("quantity").value=1;$("hingeDia").value=35;$("hingeSide").value="D";$("hingeSideOffset").value=21.5;$("hingeTopOffset").value=100;$("hingeBottomOffset").value=100;$("grooveReference").value="None";$("edgeBandThickness").value="0.8";$("edges").value="None";});
 $("panelList").addEventListener("click",e=>{const b=e.target.closest("[data-remove]");if(!b)return;panels.splice(+b.dataset.remove,1);panels.forEach((p,i)=>p.id="PN-"+String(i+1).padStart(3,"0"));render();saveProject();});
 $("saveProject").addEventListener("click",saveProject);
 $("newProject").addEventListener("click",()=>{if(!confirm("Clear the current project on this device? Export a backup first if needed."))return;panels=[];["projectName","customer","projectNotes"].forEach(id=>$(id).value="");$("boardLength").value=2440;$("boardWidth").value=1220;$("kerf").value=4;$("trim").value=10;localStorage.removeItem(STORE_KEY);render();$("saveStatus").textContent="New empty project."});
@@ -28,15 +28,19 @@ function individualPanelSvg(p){
   const gy=ref==="B"?y+h-grooveOffset*scale:y+grooveOffset*scale;
   marks+='<line x1="'+x+'" y1="'+gy+'" x2="'+(x+w)+'" y2="'+gy+'" stroke="#b3261e" stroke-width="4" stroke-dasharray="10 6"/>';
  }
- const hinges=Number(p.hinges)||0, dia=Number(p.hingeDia)||35;
+ const hinges=Number(p.hinges)||0, dia=Number(p.hingeDia)||35, side=p.hingeSide||"D";
  for(let i=0;i<hinges;i++){
-  const along=hinges===1?p.width/2:(Number(p.hingeTopOffset)||100)+i*(p.width-(Number(p.hingeTopOffset)||100)-(Number(p.hingeBottomOffset)||100))/(hinges-1);
-  const hx=x+(Number(p.hingeSideOffset)||21.5)*scale,hy=y+along*scale;
+  const horizontal=side==="A"||side==="C",run=horizontal?p.length:p.width;
+  const start=Number(p.hingeTopOffset)||100,end=Number(p.hingeBottomOffset)||100;
+  const along=hinges===1?run/2:start+i*(run-start-end)/(hinges-1);
+  const offset=(Number(p.hingeSideOffset)||21.5)*scale;
+  const hx=horizontal?x+along*scale:(side==="B"?x+w-offset:x+offset);
+  const hy=horizontal?(side==="C"?y+h-offset:y+offset):y+along*scale;
   marks+='<circle cx="'+hx+'" cy="'+hy+'" r="'+Math.max(5,dia*scale/2)+'" fill="none" stroke="#175b91" stroke-width="3"/>';
  }
  const edges=(p.edges||"None").split(",").filter(v=>v!=="None");
  const edgeLines={A:[x,y,x+w,y],B:[x+w,y,x+w,y+h],C:[x,y+h,x+w,y+h],D:[x,y,x,y+h]};
- edges.forEach(e=>{const v=edgeLines[e];if(v)marks+='<line x1="'+v[0]+'" y1="'+v[1]+'" x2="'+v[2]+'" y2="'+v[3]+'" stroke="#c62828" stroke-width="5"/>';});
+ edges.forEach(e=>{const v=edgeLines[e];if(v)marks+='<line x1="'+v[0]+'" y1="'+v[1]+'" x2="'+v[2]+'" y2="'+v[3]+'" stroke="#c62828" stroke-width="3" stroke-dasharray="5 5"/>';});
  return '<svg class="panel-svg" viewBox="0 0 640 420" xmlns="http://www.w3.org/2000/svg"><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="#e4d2ac" stroke="#5f4c2e" stroke-width="3"/>'+marks+'<text x="'+(W/2)+'" y="'+(y-16)+'" text-anchor="middle" font-size="15" fill="#111">'+p.length+' mm</text><text x="'+(x+w+15)+'" y="'+(H/2)+'" transform="rotate(90 '+(x+w+15)+' '+(H/2)+')" text-anchor="middle" font-size="15" fill="#111">'+p.width+' mm</text><text x="'+(W/2)+'" y="'+(y+h+25)+'" text-anchor="middle" font-size="13" fill="#111">Grain: '+escapeHtml(p.grain||"—")+'</text><text x="'+(x+8)+'" y="'+(y+18)+'" font-size="12" fill="#111">A</text><text x="'+(x+w-18)+'" y="'+(y+18)+'" font-size="12" fill="#111">B</text><text x="'+(x+w-18)+'" y="'+(y+h-8)+'" font-size="12" fill="#111">C</text><text x="'+(x+8)+'" y="'+(y+h-8)+'" font-size="12" fill="#111">D</text></svg>';
 }
 $("printDrawings").addEventListener("click",()=>{
@@ -66,7 +70,7 @@ function makeSheetPlan(){
   id:p.id,name:p.name,l:Number(p.length),w:Number(p.width),grain:p.grain,
   material:p.material||"Unspecified",colour:p.colour||"",thickness:p.thickness||18,
   edges:(p.edges||"None").split(",").filter(x=>x!=="None"),edgeBandThickness:p.edgeBandThickness||0.8,
-  hinges:Number(p.hinges)||0,hingeDia:Number(p.hingeDia)||35,hingeSideOffset:Number(p.hingeSideOffset)||21.5,
+  hinges:Number(p.hinges)||0,hingeDia:Number(p.hingeDia)||35,hingeSide:p.hingeSide||"D",hingeSideOffset:Number(p.hingeSideOffset)||21.5,
   hingeTopOffset:Number(p.hingeTopOffset)||100,hingeBottomOffset:Number(p.hingeBottomOffset)||100,hardware:p.hardware||"",
   grooveWidth:Number(p.grooveWidth)||0,grooveDepth:Number(p.grooveDepth)||0,
   grooveReference:p.grooveReference||"None",grooveOffset:Number(p.grooveOffset)||0,hardware:p.hardware||"",notes:p.notes||""
@@ -119,11 +123,13 @@ function sheetSvg(sheet,plan){
   if(edges.includes("C")){detail+=line(x,y+ph,x+pw,y+ph);detail+='<text x="'+(x+pw/2)+'" y="'+(y+ph-3)+'" text-anchor="middle" font-size="8" fill="#c62828">C</text>';}
   if(edges.includes("D")){detail+=line(x,y,x,y+ph);detail+='<text x="'+(x+7)+'" y="'+(y+ph/2)+'" text-anchor="middle" font-size="8" fill="#c62828">D</text>';}
   if(p.hinges>0){
+   const sm={A:"B",B:"C",C:"D",D:"A"},side=p.rotated?sm[p.hingeSide||"D"]:(p.hingeSide||"D");
    for(let i=0;i<p.hinges;i++){
-    const along=p.hinges===1?p.w/2:p.hingeTopOffset+i*(p.w-p.hingeTopOffset-p.hingeBottomOffset)/(p.hinges-1);
-    let hx,hy;
-    if(!p.rotated){hx=x+p.hingeSideOffset*scale;hy=y+along*scale;}
-    else{hx=x+along*scale;hy=y+p.hingeSideOffset*scale;}
+    const horizontal=side==="A"||side==="C",run=horizontal?p.l:p.w;
+    const start=p.hingeTopOffset||100,end=p.hingeBottomOffset||100;
+    const along=p.hinges===1?run/2:start+i*(run-start-end)/(p.hinges-1),offset=p.hingeSideOffset*scale;
+    const hx=horizontal?x+along*scale:(side==="B"?x+pw-offset:x+offset);
+    const hy=horizontal?(side==="C"?y+ph-offset:y+offset):y+along*scale;
     const radius=Math.max(2.2,p.hingeDia*scale/2);
     detail+='<circle cx="'+hx+'" cy="'+hy+'" r="'+radius+'" fill="none" stroke="#075ca8" stroke-width="2.5"/><circle cx="'+hx+'" cy="'+hy+'" r="1.8" fill="#075ca8"/>';
    }
