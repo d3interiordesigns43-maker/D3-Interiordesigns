@@ -41,7 +41,7 @@ function individualPanelSvg(p){
  const edges=(p.edges||"None").split(",").filter(v=>v!=="None");
  const edgeLines={A:[x,y,x+w,y],B:[x+w,y,x+w,y+h],C:[x,y+h,x+w,y+h],D:[x,y,x,y+h]};
  edges.forEach(e=>{const v=edgeLines[e];if(v)marks+='<line x1="'+v[0]+'" y1="'+v[1]+'" x2="'+v[2]+'" y2="'+v[3]+'" stroke="#c62828" stroke-width="3" stroke-dasharray="5 5"/>';});
- return '<svg class="panel-svg" viewBox="0 0 640 420" xmlns="http://www.w3.org/2000/svg"><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="#e4d2ac" stroke="#5f4c2e" stroke-width="3"/>'+marks+'<text x="'+(W/2)+'" y="'+(y-16)+'" text-anchor="middle" font-size="15" fill="#111">'+p.length+' mm</text><text x="'+(x+w+15)+'" y="'+(H/2)+'" transform="rotate(90 '+(x+w+15)+' '+(H/2)+')" text-anchor="middle" font-size="15" fill="#111">'+p.width+' mm</text><text x="'+(W/2)+'" y="'+(y+h+25)+'" text-anchor="middle" font-size="13" fill="#111">Grain: '+escapeHtml(p.grain||"—")+'</text></svg>';
+ return '<svg class="panel-svg" viewBox="0 0 640 420" xmlns="http://www.w3.org/2000/svg"><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="#e4d2ac" stroke="#111" stroke-width="3"/>'+marks+'<text x="'+(W/2)+'" y="'+(y-16)+'" text-anchor="middle" font-size="15" fill="#111">'+p.length+' mm</text><text x="'+(x+w+15)+'" y="'+(H/2)+'" transform="rotate(90 '+(x+w+15)+' '+(H/2)+')" text-anchor="middle" font-size="15" fill="#111">'+p.width+' mm</text><text x="'+(W/2)+'" y="'+(y+h+25)+'" text-anchor="middle" font-size="13" fill="#111">Grain: '+escapeHtml(p.grain||"—")+'</text></svg>';
 }
 
 $("printSchedule").addEventListener("click",()=>{
@@ -134,7 +134,7 @@ function sheetSvg(sheet,plan){
  const marks=pieces.map(p=>{
   const x=pad+inset+p.x*scale,y=pad+topInset+p.y*scale,pw=p.l*scale,ph=p.w*scale;
   const edges=p.rotated?rotateEdges(p.edges):p.edges;
-  let detail="";
+  let detail='<rect x="'+x+'" y="'+y+'" width="'+pw+'" height="'+ph+'" fill="none" stroke="#111" stroke-width="1.8"/> ';
   const line=(x1,y1,x2,y2)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#c62828" stroke-width="3" stroke-dasharray="5 5"/> ';
   if(edges.includes("A")){detail+=line(x,y,x+pw,y);}
   if(edges.includes("B")){detail+=line(x+pw,y,x+pw,y+ph);}
