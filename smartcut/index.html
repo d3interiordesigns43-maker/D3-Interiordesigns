@@ -89,6 +89,18 @@
       <div id="optimizerResults" class="optimizer-results" aria-live="polite"></div>
       <p class="hint">Planning estimate only. Confirm saw fence sequence, blade kerf, sheet squareness, clamps and safe handling before cutting. This does not generate a machine-control program.</p>
     </section>
+    <section class="card" id="proWorkshop">
+      <div class="section-head"><h2>Pro workshop tools</h2><span class="tag">WORKSHOP PRO</span></div>
+      <p class="muted">Create one label per panel, print a workshop production report, calculate edge-banding requirements and prepare a hinge-position schedule.</p>
+      <button id="generateWorkshopReport" class="primary full" type="button">Generate workshop reports</button>
+      <p id="proStatus" class="hint" aria-live="polite">Add panels to prepare workshop documents.</p>
+      <div id="proPreview"></div>
+      <div class="divider-line"></div>
+      <div class="section-head"><h2>Reusable offcut register</h2><span class="tag">ON THIS DEVICE</span></div>
+      <p class="hint">Save reusable rectangles reported by the optimizer. Measure each physical offcut before reuse. Saved offcuts are not yet automatically fed into new optimization runs.</p>
+      <div class="actions wrap"><button id="saveOffcuts" class="secondary" type="button">Save optimizer offcuts</button><button id="exportOffcuts" class="secondary" type="button">Export offcut CSV</button></div>
+      <div id="offcutList" class="panel-list"><p class="empty">No offcuts recorded yet.</p></div>
+    </section>
     <section class="card notice">
       <h2>Machine output status</h2>
       <p><b>Mach3 G-code:</b> not enabled. A verified machine profile, origin, axis directions, tool table, spindle control and dry-run validation are required first.</p>
@@ -102,5 +114,6 @@
   <dialog id="helpDialog"><div class="dialog-inner"><h2>Install D3 SmartCut on iPhone</h2><ol><li>Open this address in <b>Safari</b>.</li><li>Tap the Share icon.</li><li>Choose <b>Add to Home Screen</b>.</li><li>Keep the name D3 SmartCut and tap Add.</li></ol><p>Sign in through the workshop access page when prompted. After the first successful load, the app shell can open offline; project data remains on this iPhone.</p><button id="closeHelp" class="primary full">Close</button></div></dialog>
   <script src="./optimizer.js" defer></script>
   <script src="./app.js" defer></script>
+  <script src="./pro.js" defer></script>
 </body>
 </html>
