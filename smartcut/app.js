@@ -128,43 +128,38 @@ function rotateEdges(edges){
  return edges.map(e=>map[e]||e);
 }
 function sheetSvg(sheet,plan){
- const pad=34,scale=Math.min(900/plan.boardL,450/plan.boardW),w=plan.boardL*scale,h=plan.boardW*scale;
+ const pad=48,scale=Math.min(900/plan.boardL,450/plan.boardW),w=plan.boardL*scale,h=plan.boardW*scale;
  const inset=(plan.boardL-plan.usableL)/2*scale,topInset=(plan.boardW-plan.usableW)/2*scale;
  const pieces=sheet.rows.flatMap(r=>r.items);
- const marks=pieces.map(p=>{
+ const palette=["#d9f8a8","#c5f5e8","#d8edff","#f4e0ff","#ffe9bd","#d7f5d0"];
+ const defs='<defs><pattern id="offcutHatch" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="12" stroke="#aaa" stroke-width="1.2"/></pattern></defs>';
+ const marks=pieces.map((p,i)=>{
   const x=pad+inset+p.x*scale,y=pad+topInset+p.y*scale,pw=p.l*scale,ph=p.w*scale;
   const edges=p.rotated?rotateEdges(p.edges):p.edges;
-  let detail='<rect x="'+x+'" y="'+y+'" width="'+pw+'" height="'+ph+'" fill="none" stroke="#111" stroke-width="1.8"/> ';
+  let detail='<rect x="'+x+'" y="'+y+'" width="'+pw+'" height="'+ph+'" fill="'+palette[i%palette.length]+'" stroke="#111" stroke-width="2"/> ';
   const line=(x1,y1,x2,y2)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#c62828" stroke-width="3" stroke-dasharray="5 5"/> ';
-  if(edges.includes("A")){detail+=line(x,y,x+pw,y);}
-  if(edges.includes("B")){detail+=line(x+pw,y,x+pw,y+ph);}
-  if(edges.includes("C")){detail+=line(x,y+ph,x+pw,y+ph);}
-  if(edges.includes("D")){detail+=line(x,y,x,y+ph);}
+  if(edges.includes("A"))detail+=line(x,y,x+pw,y);
+  if(edges.includes("B"))detail+=line(x+pw,y,x+pw,y+ph);
+  if(edges.includes("C"))detail+=line(x,y+ph,x+pw,y+ph);
+  if(edges.includes("D"))detail+=line(x,y,x,y+ph);
   if(p.hinges>0){
    const sm={A:"B",B:"C",C:"D",D:"A"},side=p.rotated?sm[p.hingeSide||"D"]:(p.hingeSide||"D");
-   for(let i=0;i<p.hinges;i++){
+   for(let j=0;j<p.hinges;j++){
     const horizontal=side==="A"||side==="C",run=horizontal?p.l:p.w;
     const start=p.hingeTopOffset||100,end=p.hingeBottomOffset||100;
-    const along=p.hinges===1?run/2:start+i*(run-start-end)/(p.hinges-1),offset=p.hingeSideOffset*scale;
+    const along=p.hinges===1?run/2:start+j*(run-start-end)/(p.hinges-1),offset=p.hingeSideOffset*scale;
     const hx=horizontal?x+along*scale:(side==="B"?x+pw-offset:x+offset);
     const hy=horizontal?(side==="C"?y+ph-offset:y+offset):y+along*scale;
-    const radius=Math.max(2.2,p.hingeDia*scale/2);
-    detail+='<circle cx="'+hx+'" cy="'+hy+'" r="'+radius+'" fill="none" stroke="#075ca8" stroke-width="2.5"/><circle cx="'+hx+'" cy="'+hy+'" r="1.8" fill="#075ca8"/>';
+    detail+='<circle cx="'+hx+'" cy="'+hy+'" r="'+Math.max(2.2,p.hingeDia*scale/2)+'" fill="none" stroke="#075ca8" stroke-width="2.5"/>';
    }
   }
-  if(p.grain==="No restriction")detail+='<text x="'+(x+pw/2)+'" y="'+(y+ph/2+4)+'" text-anchor="middle" font-size="10" fill="#444">NO GRAIN</text>';
-  else{
-   const horizontal=(p.grain==="Length"&&!p.rotated)||(p.grain==="Width"&&p.rotated);
-   const x1=horizontal?x+pw*.28:x+pw/2,y1=horizontal?y+ph/2:y+ph*.28;
-   const x2=horizontal?x+pw*.72:x+pw/2,y2=horizontal?y+ph/2:y+ph*.72;
-   detail+='<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#16803c" stroke-width="2.5"/>';
-   if(horizontal)detail+='<path d="M '+(x2-7)+' '+(y2-5)+' L '+x2+' '+y2+' L '+(x2-7)+' '+(y2+5)+'" fill="none" stroke="#16803c" stroke-width="2.5"/>';
-   else detail+='<path d="M '+(x2-5)+' '+(y2-7)+' L '+x2+' '+y2+' L '+(x2+5)+' '+(y2-7)+'" fill="none" stroke="#16803c" stroke-width="2.5"/>';
-  }
-  detail+='<text x="'+(x+pw/2)+'" y="'+(y+ph/2-5)+'" text-anchor="middle" font-size="11" fill="#111">'+escapeHtml(p.id)+'</text><text x="'+(x+pw/2)+'" y="'+(y+ph/2+10)+'" text-anchor="middle" font-size="9" fill="#111">'+p.l+' × '+p.w+'</text>';
+  detail+='<text x="'+(x+pw/2)+'" y="'+(y+ph/2-5)+'" text-anchor="middle" font-size="12" fill="#111">#'+escapeHtml(p.id)+'</text><text x="'+(x+pw/2)+'" y="'+(y+ph/2+11)+'" text-anchor="middle" font-size="10" fill="#111">'+p.l+' × '+p.w+'</text>';
   return detail;
  }).join("");
- return '<svg class="sheet-svg" viewBox="0 0 '+(w+pad*2)+' '+(h+pad*2)+'" xmlns="http://www.w3.org/2000/svg"><rect x="'+pad+'" y="'+pad+'" width="'+w+'" height="'+h+'" fill="#fff" stroke="#111" stroke-width="2"/>'+marks+'</svg>';
+ const board='<rect x="'+pad+'" y="'+pad+'" width="'+w+'" height="'+h+'" fill="url(#offcutHatch)" stroke="#111" stroke-width="3"/>';
+ const trimRect='<rect x="'+(pad+inset)+'" y="'+(pad+topInset)+'" width="'+plan.usableL*scale+'" height="'+plan.usableW*scale+'" fill="none" stroke="#777" stroke-width="1" stroke-dasharray="5 4"/>';
+ const dims='<text x="'+(pad+w/2)+'" y="25" text-anchor="middle" font-size="16" font-weight="bold">'+plan.boardL+' mm</text><text x="17" y="'+(pad+h/2)+'" transform="rotate(-90 17 '+(pad+h/2)+')" text-anchor="middle" font-size="16" font-weight="bold">'+plan.boardW+' mm</text>';
+ return '<svg class="sheet-svg" viewBox="0 0 '+(w+pad*2)+' '+(h+pad*2)+'" xmlns="http://www.w3.org/2000/svg">'+defs+board+trimRect+marks+dims+'</svg>';
 }
 function sheetSignature(sheet){
  return sheet.rows.flatMap(r=>r.items).map(p=>[
@@ -181,3 +176,24 @@ function edgeBandTotals(){
  });
  return totals;
 }
+
+$("printSheets").addEventListener("click",()=>{
+ if(!panels.length){alert("Add at least one panel first.");return;}
+ const plan=makeSheetPlan();if(plan.error){alert(plan.error);return;}
+ const grouped=new Map();
+ plan.sheets.forEach(sheet=>{const key=sheetSignature(sheet);if(!grouped.has(key))grouped.set(key,{sheet,count:0});grouped.get(key).count++;});
+ const unique=[...grouped.values()],project=projectData();
+ const totalArea=panels.reduce((n,p)=>n+Number(p.length)*Number(p.width)*(Number(p.quantity)||1),0);
+ const sheetArea=plan.sheets.length*plan.boardL*plan.boardW;
+ const edge=edgeBandTotals(),edgeTotal=(edge["0.8"]||0)+(edge["2"]||0);
+ const rows=panels.map(p=>'<tr><td>'+escapeHtml(p.id)+' · '+escapeHtml(p.name)+'</td><td>'+p.length+' × '+p.width+' × '+p.thickness+'</td><td>'+p.quantity+'</td><td>'+escapeHtml(p.edges||"None")+'</td><td>'+escapeHtml(p.material||"—")+'</td></tr>').join("");
+ const pages=unique.map((entry,i)=>{
+  const count=entry.sheet.rows.reduce((n,r)=>n+r.items.length,0);
+  return '<article class="sheet-page"><h2>Sheet '+(i+1)+' of '+unique.length+' · '+plan.boardL+' × '+plan.boardW+' mm</h2><p class="sheet-meta">Material: '+escapeHtml(entry.sheet.material)+' · Colour: '+escapeHtml(entry.sheet.colour||"—")+' · Thickness: '+entry.sheet.thickness+' mm · Print quantity: '+entry.count+'</p>'+sheetSvg(entry.sheet,plan)+'<p>'+count+' panels on this layout. Red dotted line: edge band · Blue circle: hinge hole · Hatched area: unused sheet area.</p></article>';
+ }).join("");
+ const section=document.createElement("section");section.className="sheet-report";
+ section.innerHTML='<section class="summary-page"><h1>D3 Interior Designs — Final Sheet Layout</h1><p><b>Project:</b> '+escapeHtml(project.name||"Unnamed project")+' &nbsp; <b>Customer:</b> '+escapeHtml(project.customer||"—")+'<br><b>Date:</b> '+new Date().toLocaleDateString()+'</p><div class="sheet-summary"><div><b>'+plan.pieceCount+'</b><small>Total panel pieces</small></div><div><b>'+plan.sheets.length+'</b><small>Full sheets required</small></div><div><b>'+unique.length+'</b><small>Different layouts</small></div><div><b>'+(edgeTotal/1000).toFixed(2)+' m</b><small>Edge band total</small></div><div><b>'+(totalArea/1000000).toFixed(2)+' m²</b><small>Panel area</small></div><div><b>'+Math.max(0,100*(sheetArea-totalArea)/Math.max(1,sheetArea)).toFixed(1)+'%</b><small>Estimated waste area</small></div></div><h3>Panel list</h3><table><thead><tr><th>Panel</th><th>Length × Width × Thickness (mm)</th><th>Qty</th><th>Edge band</th><th>Material</th></tr></thead><tbody>'+rows+'</tbody></table><p>Check all dimensions, grain direction, trim and kerf before cutting. Layout is a planning aid and should be verified at the machine.</p></section>'+pages;
+ document.body.appendChild(section);document.body.classList.add("printing-sheets");
+ const cleanup=()=>{document.body.classList.remove("printing-sheets");section.remove();window.removeEventListener("afterprint",cleanup);};
+ window.addEventListener("afterprint",cleanup,{once:true});window.print();setTimeout(cleanup,60000);
+});
