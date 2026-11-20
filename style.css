@@ -167,3 +167,21 @@ body{color:var(--d3-forest);background:var(--d3-white)}
  .hero-art{animation:d3FadeUp .85s ease both}
  @keyframes d3FadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 }
+
+/* Interior design service cards with individual photographic backdrops */
+.service-photo{isolation:isolate;color:#fff;background-size:cover;background-position:center;min-height:300px}
+.service-photo:before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(22,31,28,.38),rgba(22,31,28,.88))}
+.service-photo .service-no,.service-photo p{color:#f1eee8}
+.service-photo .service-icon{color:#e4c29d}
+.service-photo h3{color:#fff;max-width:290px}
+.service-interior{background-image:url('https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1000&q=80')}
+.service-kitchen{background-image:url('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1000&q=80')}
+.service-wardrobe{background-image:url('https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=1000&q=80')}
+.service-living{background-image:url('https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=1000&q=80')}
+.service-drawings{background-image:linear-gradient(135deg,rgba(32,43,40,.88),rgba(32,43,40,.65)),url('https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1000&q=80')}
+.service-boring{background-image:linear-gradient(135deg,rgba(32,43,40,.86),rgba(32,43,40,.62)),url('https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=1000&q=80')}
+.service-photo:hover{background-position:center 48%}
+.hero-art{position:relative}
+.sketch-lines{position:absolute;inset:0;z-index:0;opacity:.42;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 700 500' fill='none' stroke='%23f3f0e8' stroke-width='1.2' stroke-linecap='round'%3E%3Cpath d='M45 390L45 95 270 95 270 390M55 105L260 105 260 380 55 380Z M270 95L610 95 610 390 270 390 M280 105L600 105 600 380 280 380Z' stroke-dasharray='5 7'/%3E%3Cpath d='M80 150L235 150 235 335 80 335Z M320 135L560 135 560 350 320 350Z M350 165L530 165M350 190L530 190M350 215L530 215M350 240L530 240'/%3E%3Cpath d='M35 420H625M35 430H625M30 85V405M20 85V405' stroke-dasharray='2 6'/%3E%3Ccircle cx='155' cy='242' r='42' stroke-dasharray='3 5'/%3E%3Cpath d='M115 242H195M155 202V282'/%3E%3C/svg%3E");background-size:cover;background-position:center}
+.art-frame{position:relative;z-index:1}
+@media(max-width:800px){.service-photo{min-height:260px}}
