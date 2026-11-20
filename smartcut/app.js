@@ -5,7 +5,7 @@ function projectData(){return{name:$("projectName").value.trim(),customer:$("cus
 function loadProject(){try{const d=JSON.parse(localStorage.getItem(STORE_KEY)||localStorage.getItem("d3-smartcut-project-v2")||"null");if(!d)return;$("projectName").value=d.name||"";$("customer").value=d.customer||"";$("projectNotes").value=d.projectNotes||"";$("boardLength").value=d.boardLength||2440;$("boardWidth").value=d.boardWidth||1220;$("kerf").value=d.kerf??4;$("trim").value=d.trim??10;panels=Array.isArray(d.panels)?d.panels.map(p=>({...p,edges:p.edges||(Array.isArray(p.edgeSides)&&p.edgeSides.length?p.edgeSides.join(","):"None")})):[];render();}catch(e){console.warn("Could not load saved project",e);}}
 function saveProject(){try{localStorage.setItem(STORE_KEY,JSON.stringify(projectData()));$("saveStatus").textContent="Saved on this device at "+new Date().toLocaleTimeString()+". This does not sync to other devices."; }catch(e){$("saveStatus").textContent="Could not save. Export a JSON backup and check device storage.";}}
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
-function render(){ const totalPieces=panels.reduce((n,p)=>n+(Number(p.quantity)||1),0);$("panelCount").textContent=totalPieces+" pieces · "+panels.length+" panel types";$("panelList").innerHTML=panels.length?panels.map((p,i)=>'<div class="panel-row"><div><strong>'+escapeHtml(p.id)+" · "+escapeHtml(p.name)+'</strong><small>'+p.length+' × '+p.width+' × '+p.thickness+' mm · Qty '+p.quantity+' · '+escapeHtml(p.material||"Material not set")+'</small></div><button class="secondary" data-edit="'+i+'">Edit</button><button class="delete" data-remove="'+i+'" aria-label="Delete '+escapeHtml(p.id)+'">Delete</button></div>').join(""):'<p class="empty">No panels yet. Add your first panel above.</p>'; }
+function render(){ const totalPieces=panels.reduce((n,p)=>n+(Number(p.quantity)||1),0);$("panelCount").textContent=totalPieces+" pieces · "+panels.length+" panel types";$("panelList").innerHTML=panels.length?panels.map((p,i)=>'<div class="panel-row"><div class="panel-row-info"><strong>'+escapeHtml(p.id)+" · "+escapeHtml(p.name)+'</strong><small>'+p.length+' × '+p.width+' × '+p.thickness+' mm · Qty '+p.quantity+' · '+escapeHtml(p.material||"Material not set")+'</small></div><div class="panel-row-actions"><button type="button" class="secondary panel-edit" data-edit="'+i+'">Edit panel</button><button type="button" class="delete" data-remove="'+i+'" aria-label="Delete '+escapeHtml(p.id)+'">Delete</button></div></div>').join(""):'<p class="empty">No panels yet. Add your first panel above.</p>'; }
 $("panelForm").addEventListener("submit",e=>{e.preventDefault();const p={id:"PN-"+String(panels.length+1).padStart(3,"0"),name:$("panelName").value.trim(),cabinet:$("cabinet").value.trim(),length:+$("length").value,width:+$("width").value,thickness:+$("thickness").value,quantity:+$("quantity").value,material:$("material").value.trim(),colour:$("colour").value.trim(),grain:$("grain").value,edges:$("edges").value,edgeBandThickness:+$("edgeBandThickness").value,grooveWidth:+$("grooveWidth").value,grooveDepth:+$("grooveDepth").value,grooveReference:$("grooveReference").value,grooveOffset:+$("grooveOffset").value,hinges:+$("hinges").value,hingeDia:+$("hingeDia").value,hingeSide:$("hingeSide").value,hingeSideOffset:+$("hingeSideOffset").value,hingeTopOffset:+$("hingeTopOffset").value,hingeBottomOffset:+$("hingeBottomOffset").value,hardware:$("hardware").value.trim(),notes:$("notes").value.trim()};if(!p.length||!p.width||!p.thickness||!p.quantity)return;panels.push(p);render();saveProject();e.target.reset();$("thickness").value=18;$("quantity").value=1;$("hingeDia").value=35;$("hingeSide").value="D";$("hingeSideOffset").value=21.5;$("hingeTopOffset").value=100;$("hingeBottomOffset").value=100;$("grooveReference").value="None";$("edgeBandThickness").value="0.8";$("edges").value="None";});
 $("panelList").addEventListener("click",e=>{
  const edit=e.target.closest("[data-edit]");
@@ -142,38 +142,68 @@ function rotateEdges(edges){
  return edges.map(e=>map[e]||e);
 }
 function sheetSvg(sheet,plan){
- const pad=48,scale=Math.min(900/plan.boardL,450/plan.boardW),w=plan.boardL*scale,h=plan.boardW*scale;
+ const pad=64,scale=Math.min(900/plan.boardL,450/plan.boardW),w=plan.boardL*scale,h=plan.boardW*scale;
  const inset=(plan.boardL-plan.usableL)/2*scale,topInset=(plan.boardW-plan.usableW)/2*scale;
+ const ux=pad+inset,uy=pad+topInset,uw=plan.usableL*scale,uh=plan.usableW*scale;
  const pieces=sheet.rows.flatMap(r=>r.items);
  const palette=["#d9f8a8","#c5f5e8","#d8edff","#f4e0ff","#ffe9bd","#d7f5d0"];
  const defs='<defs><pattern id="offcutHatch" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="12" stroke="#aaa" stroke-width="1.2"/></pattern></defs>';
- const marks=pieces.map((p,i)=>{
-  const x=pad+inset+p.x*scale,y=pad+topInset+p.y*scale,pw=p.l*scale,ph=p.w*scale;
+ let marks=pieces.map((p,i)=>{
+  const x=ux+p.x*scale,y=uy+p.y*scale,pw=p.l*scale,ph=p.w*scale;
   const edges=p.rotated?rotateEdges(p.edges):p.edges;
-  let detail='<rect x="'+x+'" y="'+y+'" width="'+pw+'" height="'+ph+'" fill="'+palette[i%palette.length]+'" stroke="#111" stroke-width="2"/> ';
-  const line=(x1,y1,x2,y2)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#c62828" stroke-width="3" stroke-dasharray="5 5"/> ';
-  if(edges.includes("A"))detail+=line(x,y,x+pw,y);
-  if(edges.includes("B"))detail+=line(x+pw,y,x+pw,y+ph);
-  if(edges.includes("C"))detail+=line(x,y+ph,x+pw,y+ph);
-  if(edges.includes("D"))detail+=line(x,y,x,y+ph);
+  let detail='<rect x="'+x+'" y="'+y+'" width="'+pw+'" height="'+ph+'" fill="'+palette[i%palette.length]+'" stroke="#111" stroke-width="2"/>';
+  const edgeLine=(x1,y1,x2,y2)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#c62828" stroke-width="2.5" stroke-dasharray="5 5"/>';
+  if(edges.includes("A"))detail+=edgeLine(x,y,x+pw,y);
+  if(edges.includes("B"))detail+=edgeLine(x+pw,y,x+pw,y+ph);
+  if(edges.includes("C"))detail+=edgeLine(x,y+ph,x+pw,y+ph);
+  if(edges.includes("D"))detail+=edgeLine(x,y,x,y+ph);
   if(p.hinges>0){
    const sm={A:"B",B:"C",C:"D",D:"A"},side=p.rotated?sm[p.hingeSide||"D"]:(p.hingeSide||"D");
    for(let j=0;j<p.hinges;j++){
     const horizontal=side==="A"||side==="C",run=horizontal?p.l:p.w;
-    const start=p.hingeTopOffset||100,end=p.hingeBottomOffset||100;
-    const along=p.hinges===1?run/2:start+j*(run-start-end)/(p.hinges-1),offset=p.hingeSideOffset*scale;
+    const from=Number(p.hingeTopOffset)||100,to=Number(p.hingeBottomOffset)||100;
+    const along=p.hinges===1?run/2:from+j*(run-from-to)/(p.hinges-1),offset=(Number(p.hingeSideOffset)||21.5)*scale;
     const hx=horizontal?x+along*scale:(side==="B"?x+pw-offset:x+offset);
     const hy=horizontal?(side==="C"?y+ph-offset:y+offset):y+along*scale;
-    detail+='<circle cx="'+hx+'" cy="'+hy+'" r="'+Math.max(2.2,p.hingeDia*scale/2)+'" fill="none" stroke="#075ca8" stroke-width="2.5"/>';
+    detail+='<circle cx="'+hx+'" cy="'+hy+'" r="'+Math.max(2.2,(Number(p.hingeDia)||35)*scale/2)+'" fill="none" stroke="#075ca8" stroke-width="2"/>';
    }
   }
-  detail+='<text x="'+(x+pw/2)+'" y="'+(y+ph/2-5)+'" text-anchor="middle" font-size="12" fill="#111">#'+escapeHtml(p.id)+'</text><text x="'+(x+pw/2)+'" y="'+(y+ph/2+11)+'" text-anchor="middle" font-size="10" fill="#111">'+p.l+' × '+p.w+'</text>';
+  // Measurements sit outside the panel edges, not over the panel centre.
+  detail+='<text x="'+(x+pw/2)+'" y="'+(y-7)+'" text-anchor="middle" font-size="11" fill="#111">'+p.l+' mm</text>';
+  detail+='<text x="'+(x+pw+5)+'" y="'+(y+ph/2)+'" text-anchor="start" dominant-baseline="middle" font-size="11" fill="#111">'+p.w+' mm</text>';
+  detail+='<text x="'+(x+pw/2)+'" y="'+(y+ph/2+4)+'" text-anchor="middle" font-size="10" fill="#111">#'+escapeHtml(p.id)+'</text>';
   return detail;
  }).join("");
- const board='<rect x="'+pad+'" y="'+pad+'" width="'+w+'" height="'+h+'" fill="url(#offcutHatch)" stroke="#111" stroke-width="3"/>';
- const trimRect='<rect x="'+(pad+inset)+'" y="'+(pad+topInset)+'" width="'+plan.usableL*scale+'" height="'+plan.usableW*scale+'" fill="none" stroke="#777" stroke-width="1" stroke-dasharray="5 4"/>';
- const dims='<text x="'+(pad+w/2)+'" y="25" text-anchor="middle" font-size="16" font-weight="bold">'+plan.boardL+' mm</text><text x="17" y="'+(pad+h/2)+'" transform="rotate(-90 17 '+(pad+h/2)+')" text-anchor="middle" font-size="16" font-weight="bold">'+plan.boardW+' mm</text>';
- return '<svg class="sheet-svg" viewBox="0 0 '+(w+pad*2)+' '+(h+pad*2)+'" xmlns="http://www.w3.org/2000/svg">'+defs+board+trimRect+marks+dims+'</svg>';
+ // Mark residual offcuts with their actual rectangular dimensions.
+ let waste="";
+ sheet.rows.forEach(row=>{
+  const remaining=plan.usableL-row.x;
+  if(remaining>1){
+   const x=ux+row.x*scale,y=uy+row.y*scale,rw=remaining*scale,rh=row.h*scale;
+   waste+='<rect x="'+x+'" y="'+y+'" width="'+rw+'" height="'+rh+'" fill="url(#offcutHatch)" stroke="#888" stroke-width="1" stroke-dasharray="4 3"/>';
+   if(rw>42&&rh>20)waste+='<text x="'+(x+rw/2)+'" y="'+(y+rh/2)+'" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="#555">Waste '+Math.round(remaining)+' × '+Math.round(row.h)+' mm</text>';
+  }
+ });
+ const bottom=plan.usableW-(sheet.rows.length?Math.max(...sheet.rows.map(r=>r.y+r.h)):0);
+ if(bottom>1){
+  const y=uy+(plan.usableW-bottom)*scale,rh=bottom*scale;
+  waste+='<rect x="'+ux+'" y="'+y+'" width="'+uw+'" height="'+rh+'" fill="url(#offcutHatch)" stroke="#888" stroke-width="1" stroke-dasharray="4 3"/>';
+  if(rh>20)waste+='<text x="'+(ux+uw/2)+'" y="'+(y+rh/2)+'" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="#555">Waste '+Math.round(plan.usableL)+' × '+Math.round(bottom)+' mm</text>';
+ }
+ // Dotted saw-guide extensions run to the usable sheet boundary.
+ let cuts="";
+ sheet.rows.forEach(row=>{
+  const y=uy+(row.y+row.h)*scale;
+  if(y<uy+uh-1)cuts+='<line x1="'+ux+'" y1="'+y+'" x2="'+(ux+uw)+'" y2="'+y+'" stroke="#555" stroke-width="1.2" stroke-dasharray="3 5"/>';
+  row.items.forEach(p=>{
+   const x=ux+(p.x+p.l)*scale;
+   if(x<ux+uw-1)cuts+='<line x1="'+x+'" y1="'+uy+'" x2="'+x+'" y2="'+(uy+uh)+'" stroke="#777" stroke-width="1" stroke-dasharray="2 6"/>';
+  });
+ });
+ const board='<rect x="'+pad+'" y="'+pad+'" width="'+w+'" height="'+h+'" fill="#fff" stroke="#111" stroke-width="3"/>';
+ const trimRect='<rect x="'+ux+'" y="'+uy+'" width="'+uw+'" height="'+uh+'" fill="none" stroke="#777" stroke-width="1" stroke-dasharray="5 4"/>';
+ const dims='<text x="'+(pad+w/2)+'" y="24" text-anchor="middle" font-size="15" font-weight="bold">'+plan.boardL+' mm</text><text x="18" y="'+(pad+h/2)+'" transform="rotate(-90 18 '+(pad+h/2)+')" text-anchor="middle" font-size="15" font-weight="bold">'+plan.boardW+' mm</text>';
+ return '<svg class="sheet-svg" viewBox="0 0 '+(w+pad*2+35)+' '+(h+pad*2)+'" xmlns="http://www.w3.org/2000/svg">'+defs+board+trimRect+waste+cuts+marks+dims+'</svg>';
 }
 function sheetSignature(sheet){
  return sheet.rows.flatMap(r=>r.items).map(p=>[
