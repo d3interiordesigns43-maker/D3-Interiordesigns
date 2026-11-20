@@ -93,3 +93,6 @@
  body.printing-schedule .schedule-table th{background:#eee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
  body.printing-schedule .schedule-report footer{display:block!important;margin-top:4mm;font-size:7pt;color:#555}
 }
+
+/* D3 SmartCut panel schedule controls: keep Edit/Delete visible on narrow screens */
+.panel-row{align-items:flex-start;flex-wrap:wrap}.panel-row-info{flex:1 1 100%;min-width:0}.panel-row-actions{display:flex;gap:8px;flex:1 1 100%;justify-content:flex-end}.panel-row-actions button{flex:0 0 auto}.panel-edit{background:#e9eef5;color:#173b60}
