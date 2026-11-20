@@ -73,3 +73,59 @@
 .team-card h3{font-family:Manrope,Arial,sans-serif;font-size:21px;margin:0 0 10px}
 .team-card-copy>p:last-child{font-size:13px;line-height:1.75;color:#555;margin:0}
 @media(max-width:800px){.team-grid{grid-template-columns:1fr;gap:18px}.team-card{display:grid;grid-template-columns:minmax(110px,38%) 1fr}.team-card img{height:100%;min-height:190px;aspect-ratio:auto}.team-card-copy{padding:16px}.team-card h3{font-size:18px}.team-card-copy>p:last-child{font-size:12px}}
+
+
+/* D3 Architectural Luxury theme — warm stone, forest charcoal and timber */
+:root{
+ --black:#202B28; --white:#fff; --muted:#716b62; --line:#ded8cf;
+ --paper:#F3F0E8; --max:1240px;
+ --d3-forest:#202B28; --d3-cream:#F3F0E8; --d3-wood:#B58A61; --d3-stone:#D8D0C2; --d3-white:#fff;
+}
+body{color:var(--d3-forest);background:var(--d3-white)}
+.site-header{background:var(--d3-cream);border-color:var(--d3-stone)}
+.nav{color:var(--d3-forest)}
+.nav-cta,.button-dark{background:var(--d3-forest);color:#fff}
+.nav-cta:hover,.button-dark:hover{background:#354740}
+.hero{background:var(--d3-cream)}
+.hero h1,.section h2,.team-section>h2{color:var(--d3-forest)}
+.hero h1 span{color:var(--d3-wood)}
+.eyebrow{color:var(--d3-wood)}
+.hero-lead,.section-heading>p{color:#655f56}
+.hero-art{background:var(--d3-forest)}
+.hero-art:before,.hero-art:after{border-color:#69766e}
+.art-tag{color:#d8d0c2}
+.trust-strip{background:#fff;border-color:var(--d3-stone);color:#72685c}
+.dot{background:var(--d3-wood)}
+.button{border-radius:3px}
+.button-dark{box-shadow:0 8px 24px #202b281a}
+.text-link{border-color:var(--d3-wood)}
+.service-grid{border-color:var(--d3-stone)}
+.service-card{background:#fff;border-color:var(--d3-stone)}
+.service-icon{color:var(--d3-wood)}
+.service-card-dark{background:var(--d3-forest);color:#fff}
+.service-card-dark .service-no,.service-card-dark p{color:#d2d0c8}
+.service-card-dark .service-icon{color:#d0a47a}
+.gallery-card{background:var(--d3-cream)}
+.gallery-card figcaption strong{color:var(--d3-forest)}
+.about{background:var(--d3-cream)}
+.about-mark,.contact{background:var(--d3-forest)}
+.about-mark small{color:var(--d3-stone)}
+.about-copy p:not(.eyebrow){color:#655f56}
+.steps article{border-color:var(--d3-wood)}
+.steps b{color:var(--d3-wood)}
+.contact-panel{border-color:#58665f}
+.contact-item{border-color:#58665f}
+.button-light{background:var(--d3-cream);color:var(--d3-forest)}
+.button-light:hover{background:var(--d3-stone)}
+.map-link{color:var(--d3-cream)}
+.footer{background:#fff}
+.footer small{border-color:var(--d3-stone)}
+.whatsapp-float{background:#786047;color:white}
+.faq-list,.faq-list details{border-color:var(--d3-stone)}
+.faq-list summary:after{color:var(--d3-wood)}
+.team-card{background:var(--d3-cream)}
+.team-role{color:var(--d3-wood)}
+.smartcut-panel{background:var(--d3-cream)}
+.smartcut-visual{background:var(--d3-forest)}
+.instagram-icon{background:var(--d3-forest)}
+@media(max-width:800px){.nav{background:var(--d3-cream)}}
