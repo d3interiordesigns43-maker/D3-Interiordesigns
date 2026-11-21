@@ -431,6 +431,7 @@ function optimiseSheets(){
   sh.rows.forEach((row,ri)=>row.placements.forEach((p,pi)=>{if(pi>0)cutSequence.push({sequence:cutSequence.length+1,sheet:si+1,stage:'Vertical part cut',x1:M+p.x-K/2,y1:M+row.y,x2:M+p.x-K/2,y2:M+row.y+row.height,length:row.height,kerf:K,reference:'Strip '+(ri+1)+' · before '+p.name})}));
  });
  const recoverableOffcutArea=offcuts.reduce((n,o)=>n+o.w*o.h,0),fmt=n=>Math.round(n),moneyArea=n=>(n/1e6).toFixed(2);
+ const reusedOffcuts=d3ReadOffcuts().filter(o=>(o.allocations||[]).some(a=>a.projectKey===d3ProjectKey())),reusedPanelCount=reusedOffcuts.reduce((n,o)=>n+(o.allocations||[]).filter(a=>a.projectKey===d3ProjectKey()).length,0);
  el('optimiseResult').innerHTML='<strong>Estimated sheets: '+sheets.length+'</strong><br>Parts: '+items.length+' · Net part area: '+moneyArea(totalArea)+' m²<br>Stock area: '+moneyArea(stockArea)+' m² · Net area utilisation: '+util.toFixed(1)+'%<br>Total unused area (kerf + margins + offcuts): '+moneyArea(Math.max(0,stockArea-totalArea))+' m²<br>Recoverable offcut area: '+moneyArea(recoverableOffcutArea)+' m² · Offcut rectangles: '+offcuts.length+'<br>Cut operations: '+cutSequence.length+' · Saw kerf: '+K+' mm · Edge margin: '+M+' mm<br>Panels allocated from saved offcuts: '+reusedPanelCount+'<br><span style="color:var(--muted)">Sequence: all horizontal strip cuts first, then vertical part cuts in each strip. Rotation: '+(allowRotation?'Allowed only for panels without a fixed grain direction':'Locked to entered grain direction')+'.</span>';
  const preview=el('sheetPreview'),esc=v=>String(v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
  preview.innerHTML=sheets.map((sh,si)=>{
@@ -453,7 +454,7 @@ function optimiseSheets(){
   const dims='<text x="'+(vbW/2)+'" y="12" text-anchor="middle" font-size="10" fill="#222">'+SL+' mm</text><text x="12" y="'+(vbH/2)+'" transform="rotate(-90 12 '+(vbH/2)+')" text-anchor="middle" font-size="10" fill="#222">'+SW+' mm</text>';
   return '<div style="background:#f7f7f4;color:#18212a;padding:8px;border-radius:8px"><strong>Sheet '+(si+1)+' — '+SL+' × '+SW+' mm</strong><div style="font-size:11px;color:#39464d">Red = horizontal strip cut · Blue = vertical part cut · Grey = waste/offcut · Dimensions in mm</div><svg viewBox="0 0 '+vbW+' '+vbH+'" width="100%" role="img" aria-label="Dimensioned guillotine cutting layout sheet '+(si+1)+'">'+trim+partsSvg.join('')+wasteSvg.join('')+cutsSvg.join('')+dims+'</svg></div>';
  }).join('');
- const reusedOffcuts=d3ReadOffcuts().filter(o=>(o.allocations||[]).some(a=>a.projectKey===d3ProjectKey())),reusedPanelCount=reusedOffcuts.reduce((n,o)=>n+(o.allocations||[]).filter(a=>a.projectKey===d3ProjectKey()).length,0);const result={SL,SW,K,M,items,sheets,totalArea,stockArea,util,offcuts,recoverableOffcutArea,cutSequence,allowRotation,reusedOffcuts,reusedPanelCount};
+ const result={SL,SW,K,M,items,sheets,totalArea,stockArea,util,offcuts,recoverableOffcutArea,cutSequence,allowRotation,reusedOffcuts,reusedPanelCount};
  window.d3CuttingResult=result;
  return result;
 }
