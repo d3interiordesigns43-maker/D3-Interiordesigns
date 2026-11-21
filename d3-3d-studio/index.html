@@ -118,7 +118,19 @@
 <div><label>Drawer runner</label><select id="unitRunner"><option>Ebco soft-close</option><option>Blum soft-close</option><option>Hettich soft-close</option><option>Telescopic channel</option><option>None</option></select></div>
 <div><label>Other Ebco accessory</label><select id="unitAccessory"><option>None</option><option>Lift-up fitting</option><option>Pull-out basket</option><option>Wardrobe lift</option><option>Clothes rail</option><option>Waste bin pull-out</option><option>Cutlery organiser</option><option>LED profile</option></select></div>
 </div><div style="margin-top:12px"><label>Unit front elevation preview</label><div style="background:#0b1117;border:1px solid var(--line);border-radius:8px;overflow:hidden"><svg id="unitElevationSvg" viewBox="0 0 760 360" role="img" aria-label="Selected cabinet front elevation" style="width:100%;height:auto;display:block"><text x="380" y="180" fill="#9caebc" text-anchor="middle">Select a furniture unit to preview its front elevation</text></svg></div><div id="unitElevationLegend" class="note" style="margin-top:6px">Conceptual front view · dimensions in millimetres</div></div>
-<div class="btns"><button type="button" id="applyUnitConfiguration">Apply to selected unit</button><span id="unitConfigStatus" class="note">Select a furniture block to configure it.</span></div></div><div class="btns"><button type="button" id="plan3DView">Render 3D Room</button><span class="note">Preview the room, walls and plan-positioned furniture in the 3D viewer.</span></div>
+<div style="margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:9px;background:#101820">
+<h4 style="color:var(--accent);margin:0 0 8px">Selected Unit · Panel Schedule & Edge Banding</h4>
+<p class="note">Generate a preliminary cut list from this unit's plan dimensions and door / drawer / shelf settings. Adjust board thickness, back thickness and front gap before generating.</p>
+<div class="fields">
+<div><label>Carcass board thickness (mm)</label><input id="unitBoardThk" type="number" min="12" max="30" value="18"></div>
+<div><label>Back panel thickness (mm)</label><input id="unitBackThk" type="number" min="3" max="12" value="6"></div>
+<div><label>Front gap (mm)</label><input id="unitFrontGap" type="number" min="1" max="8" step="0.5" value="3"></div>
+</div>
+<div class="btns"><button type="button" id="generateUnitPanels">Generate panel schedule</button><button type="button" class="secondary" id="exportUnitPanels">Export unit CSV</button></div>
+<div id="unitPanelSummary" class="note" style="margin:8px 0">Select a furniture unit and generate its schedule.</div>
+<div class="table-wrap"><table><thead><tr><th>Panel</th><th>Qty</th><th>Length</th><th>Width</th><th>Thk</th><th>Edge band (T/B/L/R)</th><th>Band length</th></tr></thead><tbody id="unitPanelRows"><tr><td colspan="7">No panel schedule generated.</td></tr></tbody></table></div>
+<p class="note">Preliminary nominal sizes only. Door/drawer front clearances and back-groove construction are simplified. Verify joinery, grain direction, edge orientation, hardware clearances and actual board sizes before cutting.</p>
+</div><div class="btns"><button type="button" id="applyUnitConfiguration">Apply to selected unit</button><span id="unitConfigStatus" class="note">Select a furniture block to configure it.</span></div></div><div class="btns"><button type="button" id="plan3DView">Render 3D Room</button><span class="note">Preview the room, walls and plan-positioned furniture in the 3D viewer.</span></div>
 <div id="planStatus" class="note" style="margin:8px 0">Save room dimensions above, then select a project.</div>
 <div style="background:#0b1117;border:1px solid var(--line);border-radius:8px;overflow:hidden"><svg id="roomPlanSvg" viewBox="0 0 760 540" role="img" aria-label="Interactive room floor plan" style="width:100%;height:auto;display:block;touch-action:none"><rect width="760" height="540" fill="#0b1117"/><text x="380" y="270" fill="#9caebc" text-anchor="middle">Select a project and enter room dimensions</text></svg></div>
 <div id="planLegend" class="note" style="margin-top:8px">Drag elements to reposition. Select an item to highlight it.</div>
@@ -753,5 +765,39 @@ if(hardwareQuickPreset)hardwareQuickPreset.addEventListener('change',()=>{
  el('accessoryBrand').value=p.brand;el('accessoryCategory').value=p.category;el('accessoryModel').value=p.model;
  el('accessoryPartRef').value='';el('catalogueUnitPrice').value='0';el('accessoryQty').value='1';
  const status=el('cataloguePdfStatus');if(status)status.textContent='Preset applied. Add exact manufacturer part number and verify source document.';
+});
+
+// Prototype 68 · selected-unit panel schedule
+let unitPanelSchedule=[];
+function unitPanelBandLength(p){const e=p.edges||'';return ((e.includes('T')||e.includes('B'))?2*p.width:0)+((e.includes('L')||e.includes('R'))?2*p.length:0)}
+function renderUnitPanelSchedule(){
+ const body=el('unitPanelRows'),summary=el('unitPanelSummary');
+ if(!unitPanelSchedule.length){body.innerHTML='<tr><td colspan="7">No panel schedule generated.</td></tr>';summary.textContent='Select a furniture unit and generate its schedule.';return}
+ body.innerHTML=unitPanelSchedule.map(p=>'<tr><td>'+esc(p.name)+'</td><td>'+p.qty+'</td><td>'+p.length+'</td><td>'+p.width+'</td><td>'+p.thickness+'</td><td>'+p.edges+'</td><td>'+((unitPanelBandLength(p)*p.qty)/1000).toFixed(2)+' m</td></tr>').join('');
+ const area=unitPanelSchedule.reduce((a,p)=>a+p.length*p.width*p.qty/1e6,0),band=unitPanelSchedule.reduce((a,p)=>a+unitPanelBandLength(p)*p.qty/1000,0);
+ summary.textContent=unitPanelSchedule.length+' panel types · '+unitPanelSchedule.reduce((a,p)=>a+p.qty,0)+' total pieces · '+area.toFixed(2)+' m² nominal panel area · '+band.toFixed(2)+' m edge band';
+}
+function generateUnitPanelSchedule(){
+ const item=planItems.find(i=>i.id===planSelected);
+ if(!item||!['kitchen','wardrobe','tv','island'].includes(item.type)){alert('Select a kitchen, wardrobe, TV or island unit first.');return}
+ const W=Math.round(Number(item.w)||0),H=Math.round(Number(item.height)||720),D=Math.round(Number(item.h)||0),T=Number(el('unitBoardThk').value),B=Number(el('unitBackThk').value),gap=Number(el('unitFrontGap').value),c=item.configuration||{};
+ const doors=Math.max(0,Math.min(12,Number(c.doors??el('unitDoorCount').value)||0)),drawers=Math.max(0,Math.min(12,Number(c.drawers??el('unitDrawerCount').value)||0)),shelves=Math.max(0,Math.min(20,Number(c.shelves??el('unitShelfCount').value)||0));
+ if(![W,H,D,T,B,gap].every(Number.isFinite)||W<=2*T||H<=2*T||D<=B||T<12||T>30||B<3||B>12||gap<1||gap>8){alert('Check unit dimensions, board thickness, back thickness and front gap.');return}
+ const innerW=W-2*T,innerH=H-2*T,innerD=D-B,drawerZone=drawers?(doors?Math.min(innerH*.38,innerH-40):innerH):0,drawerCell=drawers?drawerZone/drawers:0,doorH=innerH-drawerZone-(drawers?gap:0)-2*gap;
+ const rows=[],add=(name,qty,length,width,thickness,edges)=>{if(qty>0&&length>0&&width>0)rows.push({name,qty,length:Math.round(length),width:Math.round(width),thickness,edges})};
+ add('Left side',1,H,D,T,'TBLR');add('Right side',1,H,D,T,'TBLR');
+ add('Top',1,innerW,innerD,T,'TB');add('Bottom',1,innerW,innerD,T,'TB');
+ add('Back panel',1,innerH,innerW,B,'None');
+ for(let i=0;i<shelves;i++)add('Shelf '+(i+1),1,innerW,innerD,T,'TB');
+ if(drawers){const drawerFrontH=Math.max(30,drawerCell-gap);for(let i=0;i<drawers;i++)add('Drawer front '+(i+1),1,drawerFrontH,W-2*gap,18,'TBLR')}
+ if(doors&&doorH>60){const cell=(W-2*gap)/doors;for(let i=0;i<doors;i++)add('Door '+(i+1),1,doorH,cell-gap,18,'TBLR')}
+ unitPanelSchedule=rows;renderUnitPanelSchedule();
+}
+el('generateUnitPanels').addEventListener('click',generateUnitPanelSchedule);
+el('exportUnitPanels').addEventListener('click',()=>{
+ if(!unitPanelSchedule.length){alert('Generate the panel schedule first.');return}
+ const rows=[['Panel','Qty','Length mm','Width mm','Thickness mm','Edge band T/B/L/R','Edge band total m'],...unitPanelSchedule.map(p=>[p.name,p.qty,p.length,p.width,p.thickness,p.edges,(unitPanelBandLength(p)*p.qty/1000).toFixed(2)])];
+ const csv=rows.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n'),blob=new Blob(['\ufeff',csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');
+ a.href=URL.createObjectURL(blob);a.download='D3-unit-panel-schedule.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 });
 </script></body></html>
