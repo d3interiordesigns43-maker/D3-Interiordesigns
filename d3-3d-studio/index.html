@@ -117,7 +117,12 @@
 <div><label>Handle style</label><select id="unitHandleStyle"><option>Ebco bar handle</option><option>Ebco knob</option><option>Profile / Gola</option><option>Push-to-open</option><option>Handleless</option></select></div>
 <div><label>Drawer runner</label><select id="unitRunner"><option>Ebco soft-close</option><option>Blum soft-close</option><option>Hettich soft-close</option><option>Telescopic channel</option><option>None</option></select></div>
 <div><label>Other Ebco accessory</label><select id="unitAccessory"><option>None</option><option>Lift-up fitting</option><option>Pull-out basket</option><option>Wardrobe lift</option><option>Clothes rail</option><option>Waste bin pull-out</option><option>Cutlery organiser</option><option>LED profile</option></select></div>
-</div><div style="margin-top:12px"><label>Unit front elevation preview</label><div style="background:#0b1117;border:1px solid var(--line);border-radius:8px;overflow:hidden"><svg id="unitElevationSvg" viewBox="0 0 760 360" role="img" aria-label="Selected cabinet front elevation" style="width:100%;height:auto;display:block"><text x="380" y="180" fill="#9caebc" text-anchor="middle">Select a furniture unit to preview its front elevation</text></svg></div><div id="unitElevationLegend" class="note" style="margin-top:6px">Conceptual front view · dimensions in millimetres</div></div>
+</div><div style="margin-top:12px"><label>Unit front elevation preview</label><div style="background:#0b1117;border:1px solid var(--line);border-radius:8px;overflow:hidden"><svg id="unitElevationSvg" viewBox="0 0 760 360" role="img" aria-label="Selected cabinet front elevation" style="width:100%;height:auto;display:block"><text x="380" y="180" fill="#9caebc" text-anchor="middle">Select a furniture unit to preview its front elevation</text></svg></div><div id="unitElevationLegend" class="note" style="margin-top:6px">Conceptual front view · dimensions in millimetres</div>
+<div class="fields" style="margin-top:8px">
+<div><label>Hardware marker</label><select id="unitHardwareMarker"><option value="">Select marker on drawing</option></select></div>
+<div><label>Horizontal position X (mm)</label><input id="unitHardwareX" type="number" min="0" step="1" value="0"></div>
+<div><label>Vertical position Y from top (mm)</label><input id="unitHardwareY" type="number" min="0" step="1" value="0"></div>
+</div><div class="btns"><button type="button" id="saveUnitHardwarePosition">Update marker position</button><span id="unitHardwareEditStatus" class="note">Select a marker in the elevation to edit its indicative position.</span></div></div>
 <div style="margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:9px;background:#101820">
 <h4 style="color:var(--accent);margin:0 0 8px">Selected Unit · Panel Schedule & Edge Banding</h4>
 <p class="note">Generate a preliminary cut list from this unit's plan dimensions and door / drawer / shelf settings. Adjust board thickness, back thickness and front gap before generating.</p>
@@ -625,10 +630,11 @@ el('plan3DView').addEventListener('click',()=>{if(roomSceneActive){exitRoomScene
 function planSvgPoint(e){const svg=el('roomPlanSvg'),p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const q=p.matrixTransform(svg.getScreenCTM().inverse());return q}
 
 
+let selectedUnitHardwareMarker='';
 function renderUnitElevation(){
- const svg=el('unitElevationSvg'),legend=el('unitElevationLegend'),item=planItems.find(i=>i.id===planSelected);
- if(!item||!['kitchen','wardrobe','tv','island'].includes(item.type)){svg.innerHTML='<text x="380" y="180" fill="#9caebc" text-anchor="middle">Select a kitchen, wardrobe, TV or island unit</text>';legend.textContent='Conceptual front view · dimensions in millimetres';return}
- const c=item.configuration||{doors:2,drawers:0,shelves:2,hingeBrand:'Ebco',hingeType:'Soft-close full overlay',handleStyle:'Ebco bar handle',runner:'Ebco soft-close',accessory:'None'};
+ const svg=el('unitElevationSvg'),legend=el('unitElevationLegend'),item=planItems.find(i=>i.id===planSelected),selector=el('unitHardwareMarker');
+ if(!item||!['kitchen','wardrobe','tv','island'].includes(item.type)){svg.innerHTML='<text x="380" y="180" fill="#9caebc" text-anchor="middle">Select a kitchen, wardrobe, TV or island unit</text>';legend.textContent='Conceptual front view · dimensions in millimetres';if(selector)selector.innerHTML='<option value="">No unit selected</option>';return}
+ const c=item.configuration||(item.configuration={doors:2,drawers:0,shelves:2,hingeBrand:'Ebco',hingeType:'Soft-close full overlay',handleStyle:'Ebco bar handle',runner:'Ebco soft-close',accessory:'None'});
  const w=Math.max(100,Number(item.w)||900),h=Math.max(100,Number(item.height)||720),d=Math.max(30,Number(item.h)||600);
  const x0=110,y0=42,boxW=540,boxH=250,scale=Math.min(boxW/w,boxH/h),fw=w*scale,fh=h*scale,x=x0+(boxW-fw)/2,y=y0+(boxH-fh)/2;
  let out='<rect width="760" height="360" fill="#0b1117"/><rect x="'+x+'" y="'+y+'" width="'+fw+'" height="'+fh+'" fill="#b88b50" fill-opacity=".22" stroke="#e8edf2" stroke-width="3"/>';
@@ -637,10 +643,23 @@ function renderUnitElevation(){
  const doorZoneH=fh*(drawers?Math.max(.35,1-drawers*.17):1),doorY=y;
  if(doors){const doorW=fw/doors;for(let i=0;i<doors;i++){const dx=x+i*doorW;out+='<rect x="'+(dx+2)+'" y="'+(doorY+2)+'" width="'+(doorW-4)+'" height="'+(doorZoneH-4)+'" fill="#d1ad7d" fill-opacity=".22" stroke="#f0d5b2" stroke-width="1.5"/>';if(c.handleStyle==='Ebco bar handle'||c.handleStyle==='Ebco knob'){const hx=dx+doorW*.86,hy=doorY+doorZoneH*.5;out+=c.handleStyle==='Ebco knob'?'<circle cx="'+hx+'" cy="'+hy+'" r="4" fill="#d8dde1"/>':'<rect x="'+(hx-2)+'" y="'+(hy-18)+'" width="4" height="36" rx="2" fill="#d8dde1"/>'}else if(c.handleStyle==='Profile / Gola'){out+='<rect x="'+(dx+doorW-7)+'" y="'+(doorY+5)+'" width="5" height="'+(doorZoneH-10)+'" fill="#7c858b"/>'}}}
  else if(shelves){for(let i=1;i<=shelves;i++){const sy=y+fh*(i/(shelves+1));out+='<line x1="'+(x+4)+'" y1="'+sy+'" x2="'+(x+fw-4)+'" y2="'+sy+'" stroke="#f0d5b2" stroke-width="3"/>'}}
+ if(!Array.isArray(c.hardwareLayout)){c.hardwareLayout=[];let n=0;const add=(type,label,xmm,ymm)=>c.hardwareLayout.push({id:'HM-'+(++n),type,label,x:xmm,y:ymm});
+ for(let di=0;di<doors;di++){const dw=w/doors;const hx=di%2===0?dw-22:22;[90,Math.max(110,h-90)].forEach((yy,k)=>add('hinge','Door '+(di+1)+' hinge '+(k+1),di*dw+hx,Math.min(h-20,yy)))}
+ add('minifix','Minifix top left',35,35);add('minifix','Minifix top right',Math.max(40,w-35),35);add('minifix','Minifix bottom left',35,Math.max(40,h-35));add('minifix','Minifix bottom right',Math.max(40,w-35),Math.max(40,h-35));
+ if(drawers){for(let di=0;di<drawers;di++){const yy=h-(di+.5)*(h*.17/drawers);add('runner','Drawer '+(di+1)+' runner left',25,yy);add('runner','Drawer '+(di+1)+' runner right',Math.max(30,w-25),yy)}}
+ }
+ const layout=c.hardwareLayout,opts=layout.map(m=>'<option value="'+esc(m.id)+'" '+(selectedUnitHardwareMarker===m.id?'selected':'')+'>'+esc(m.label)+'</option>').join('');
+ if(selector){selector.innerHTML='<option value="">Select marker on drawing</option>'+opts;if(!layout.some(m=>m.id===selectedUnitHardwareMarker))selectedUnitHardwareMarker='';selector.value=selectedUnitHardwareMarker}
+ layout.forEach(m=>{const mx=x+(m.x/w)*fw,my=y+(m.y/h)*fh,col=m.type==='hinge'?'#69c5ff':m.type==='minifix'?'#ffc857':'#a8e6a1';out+='<g data-hardware-marker="'+esc(m.id)+'" style="cursor:pointer"><circle cx="'+mx+'" cy="'+my+'" r="'+(selectedUnitHardwareMarker===m.id?9:6)+'" fill="'+col+'" stroke="'+(selectedUnitHardwareMarker===m.id?'#ffffff':'#17212b')+'" stroke-width="2"/><text x="'+(mx+9)+'" y="'+(my-8)+'" fill="#ffffff" font-size="9">'+esc(m.id)+'</text></g>'});
  out+='<text x="380" y="22" fill="#eef3f6" font-size="13" text-anchor="middle">'+w+' mm wide × '+h+' mm high</text><text x="380" y="330" fill="#aab8c3" font-size="12" text-anchor="middle">Depth '+d+' mm · '+doors+' doors · '+drawers+' drawers · '+shelves+' shelves</text>';
  svg.innerHTML=out;
- legend.textContent='Front elevation preview · '+(c.hingeBrand||'Generic')+' / '+(c.hingeType||'hinge')+' · '+(c.runner||'runner')+' · '+(c.handleStyle||'handle')+' · '+(c.accessory||'no extra accessory')+'. Conceptual only; no drilling or fitting dimensions.';
+ const chosen=layout.find(m=>m.id===selectedUnitHardwareMarker);if(chosen){el('unitHardwareX').value=Math.round(chosen.x);el('unitHardwareY').value=Math.round(chosen.y)}
+ legend.textContent='Indicative front-view markers: blue = hinge, amber = Minifix, green = drawer runner. Select a marker to edit its position. Conceptual only; not drilling coordinates.';
 }
+el('unitHardwareMarker').addEventListener('change',e=>{selectedUnitHardwareMarker=e.target.value;renderUnitElevation()});
+el('unitElevationSvg').addEventListener('click',e=>{const g=e.target.closest('[data-hardware-marker]');if(!g)return;selectedUnitHardwareMarker=g.getAttribute('data-hardware-marker');renderUnitElevation()});
+el('saveUnitHardwarePosition').addEventListener('click',()=>{const item=planItems.find(i=>i.id===planSelected),m=item?.configuration?.hardwareLayout?.find(x=>x.id===selectedUnitHardwareMarker);if(!m){alert('Select a hardware marker first.');return}const x=Number(el('unitHardwareX').value),y=Number(el('unitHardwareY').value),w=Number(item.w)||900,h=Number(item.height)||720;if(!Number.isFinite(x)||!Number.isFinite(y)||x<0||x>w||y<0||y>h){alert('Enter positions within the unit dimensions.');return}m.x=x;m.y=y;renderUnitElevation();el('unitHardwareEditStatus').textContent=m.label+' position updated in this room plan. Save the room plan to keep changes.'});
+
 function syncUnitConfiguration(){
  const item=planItems.find(i=>i.id===planSelected),ids=['unitDoorCount','unitDrawerCount','unitShelfCount','unitHingeBrand','unitHingeType','unitHandleStyle','unitRunner','unitAccessory'];
  if(!item||!['kitchen','wardrobe','tv','island'].includes(item.type)){ids.forEach(id=>{const n=el(id);if(n)n.disabled=true});el('unitConfigStatus').textContent='Select a kitchen, wardrobe, TV or island block.';return}
@@ -654,7 +673,7 @@ function syncUnitConfiguration(){
 el('applyUnitConfiguration').addEventListener('click',()=>{
  const item=planItems.find(i=>i.id===planSelected);if(!item||!['kitchen','wardrobe','tv','island'].includes(item.type)){alert('Select a furniture block first.');return}
  item.configuration={doors:Math.max(0,Math.min(12,Number(el('unitDoorCount').value)||0)),drawers:Math.max(0,Math.min(12,Number(el('unitDrawerCount').value)||0)),shelves:Math.max(0,Math.min(20,Number(el('unitShelfCount').value)||0)),hingeBrand:el('unitHingeBrand').value,hingeType:el('unitHingeType').value,handleStyle:el('unitHandleStyle').value,runner:el('unitRunner').value,accessory:el('unitAccessory').value};
- syncUnitConfiguration();drawRoomPlan();el('planStatus').textContent='Configuration saved to '+(item.label||item.type)+'. Remember to save the room plan.';
+ syncUnitConfiguration();renderUnitElevation();drawRoomPlan();el('planStatus').textContent='Configuration saved to '+(item.label||item.type)+'. Remember to save the room plan.';
 });
 function drawRoomPlan(){
  const svg=el('roomPlanSvg'),d=plannerDimensions(),scale=Math.min(620/d.w,410/d.h),rw=d.w*scale,rh=d.h*scale,x=(760-rw)/2,y=(540-rh)/2;
