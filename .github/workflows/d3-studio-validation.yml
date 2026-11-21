@@ -87,3 +87,12 @@ jobs:
 
       - name: Check JavaScript module syntax
         run: node --check /tmp/d3-studio-module.mjs
+
+      - name: Install browser test dependency
+        run: npm install --no-save playwright
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run D3 Studio browser smoke test
+        run: node d3-3d-studio/smoke-test.mjs
