@@ -130,6 +130,12 @@
 <div id="unitPanelSummary" class="note" style="margin:8px 0">Select a furniture unit and generate its schedule.</div>
 <div class="table-wrap"><table><thead><tr><th>Panel ID / Name</th><th>Qty</th><th>Length</th><th>Width</th><th>Thk</th><th>Edge band (T/B/L/R)</th><th>Mica / finish</th><th>Edge colour</th><th>Grain direction</th><th>Band length</th><th>Actions</th></tr></thead><tbody id="unitPanelRows"><tr><td colspan="7">No panel schedule generated.</td></tr></tbody></table></div>
 <p class="note">Preliminary nominal sizes only. Door/drawer front clearances and back-groove construction are simplified. Verify joinery, grain direction, edge orientation, hardware clearances and actual board sizes before cutting.</p>
+<div style="margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:8px">
+<h4 style="margin:0 0 8px;color:var(--accent)">Unit Hardware Schedule · Prototype 71</h4>
+<div id="unitHardwareSummary" class="note">Generate a panel schedule to estimate hardware quantities.</div>
+<div class="table-wrap"><table><thead><tr><th>Hardware</th><th>Brand / selection</th><th>Estimated qty</th><th>Basis / note</th></tr></thead><tbody id="unitHardwareRows"><tr><td colspan="4">No hardware estimate yet.</td></tr></tbody></table></div>
+<p class="note">Planning estimate only: hinge count uses a simple door-height rule (2 hinges below 900 mm; 3 at or above 900 mm). Minifix allowance is 8 per cabinet unit and must be edited to suit actual joint locations. Confirm exact Ebco model, screw positions, connector drilling, load ratings and manufacturer templates before machining. Accessories are counted as one selected fitting, not a complete bill of materials.</p>
+</div>
 </div><div class="btns"><button type="button" id="applyUnitConfiguration">Apply to selected unit</button><span id="unitConfigStatus" class="note">Select a furniture block to configure it.</span></div></div><div class="btns"><button type="button" id="plan3DView">Render 3D Room</button><span class="note">Preview the room, walls and plan-positioned furniture in the 3D viewer.</span></div>
 <div id="planStatus" class="note" style="margin:8px 0">Save room dimensions above, then select a project.</div>
 <div style="background:#0b1117;border:1px solid var(--line);border-radius:8px;overflow:hidden"><svg id="roomPlanSvg" viewBox="0 0 760 540" role="img" aria-label="Interactive room floor plan" style="width:100%;height:auto;display:block;touch-action:none"><rect width="760" height="540" fill="#0b1117"/><text x="380" y="270" fill="#9caebc" text-anchor="middle">Select a project and enter room dimensions</text></svg></div>
@@ -781,6 +787,18 @@ function renderUnitPanelSchedule(){
  const area=unitPanelSchedule.reduce((a,p)=>a+p.length*p.width*p.qty/1e6,0),band=unitPanelSchedule.reduce((a,p)=>a+unitPanelBandLength(p)*p.qty/1000,0);
  summary.textContent=unitPanelSchedule.length+' panel types · '+unitPanelSchedule.reduce((a,p)=>a+p.qty,0)+' total pieces · '+area.toFixed(2)+' m² nominal panel area · '+band.toFixed(2)+' m edge band. Edits recalculate totals immediately.';
 }
+function renderUnitHardwareSchedule(){
+ const body=el('unitHardwareRows'),summary=el('unitHardwareSummary'),item=planItems.find(i=>i.id===planSelected),c=item?.configuration||{};
+ if(!unitPanelSchedule.length){body.innerHTML='<tr><td colspan="4">Generate a panel schedule first.</td></tr>';summary.textContent='Generate a panel schedule to estimate hardware quantities.';return}
+ const doors=unitPanelSchedule.filter(p=>/^Door /.test(p.name)),drawers=unitPanelSchedule.filter(p=>/^Drawer front /.test(p.name));
+ const doorCount=doors.reduce((n,p)=>n+p.qty,0),drawerCount=drawers.reduce((n,p)=>n+p.qty,0);
+ const hinges=doors.reduce((n,p)=>n+p.qty*(p.length>=900?3:2),0),runnerPairs=drawerCount,handles=(/Handleless|Push-to-open/.test(c.handleStyle||el('unitHandleStyle').value)?0:doorCount+drawerCount);
+ const brand=c.hingeBrand||el('unitHingeBrand').value,hingeType=c.hingeType||el('unitHingeType').value,runner=c.runner||el('unitRunner').value,handle=c.handleStyle||el('unitHandleStyle').value,accessory=c.accessory||el('unitAccessory').value;
+ const minifix=8,items=[['Concealed hinges',brand+' · '+hingeType,hinges,'2 per door below 900 mm; 3 at/above 900 mm'],['Minifix connector sets','Generic planning allowance',minifix,'8 per cabinet unit; revise for actual joint layout'],['Drawer runner pairs',runner,runnerPairs,'1 pair per drawer'],['Handles / pulls',handle,handles,'1 per door or drawer front; zero for handleless / push-to-open'],['Selected accessory',accessory,accessory==='None'?0:1,'One fitting allowance; configure actual quantity separately']];
+ body.innerHTML=items.map(x=>'<tr><td>'+esc(x[0])+'</td><td>'+esc(x[1])+'</td><td>'+x[2]+'</td><td>'+esc(x[3])+'</td></tr>').join('');
+ summary.textContent=(item?.label||item?.type||'Selected unit')+' · '+doorCount+' doors · '+drawerCount+' drawer fronts · estimated only';
+ window.d3UnitHardwareExport=items;
+}
 function generateUnitPanelSchedule(){
  const item=planItems.find(i=>i.id===planSelected);
  if(!item||!['kitchen','wardrobe','tv','island'].includes(item.type)){alert('Select a kitchen, wardrobe, TV or island unit first.');return}
@@ -795,12 +813,14 @@ function generateUnitPanelSchedule(){
  for(let i=0;i<shelves;i++)add('Shelf '+(i+1),1,innerW,innerD,T,'TB');
  if(drawers){const drawerFrontH=Math.max(30,drawerCell-gap);for(let i=0;i<drawers;i++)add('Drawer front '+(i+1),1,drawerFrontH,W-2*gap,18,'TBLR')}
  if(doors&&doorH>60){const cell=(W-2*gap)/doors;for(let i=0;i<doors;i++)add('Door '+(i+1),1,doorH,cell-gap,18,'TBLR')}
- unitPanelSchedule=rows;renderUnitPanelSchedule();
+ unitPanelSchedule=rows;renderUnitPanelSchedule();renderUnitHardwareSchedule();
 }
 el('generateUnitPanels').addEventListener('click',generateUnitPanelSchedule);
 el('exportUnitPanels').addEventListener('click',()=>{
  if(!unitPanelSchedule.length){alert('Generate the panel schedule first.');return}
  const rows=[['Panel ID','Panel','Qty','Length mm','Width mm','Thickness mm','Edge band T/B/L/R','Mica / finish colour','Edge band colour','Grain direction','Edge band total m'],...unitPanelSchedule.map(p=>[p.id,p.name,p.qty,p.length,p.width,p.thickness,p.edges,p.finish,p.edge,p.grain,(unitPanelBandLength(p)*p.qty/1000).toFixed(2)])];
+ const hardware=window.d3UnitHardwareExport||[];
+ rows.push([],['HARDWARE ESTIMATE','Brand / selection','Estimated qty','Basis / note'],...hardware);
  const csv=rows.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n'),blob=new Blob(['\ufeff',csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');
  a.href=URL.createObjectURL(blob);a.download='D3-unit-panel-schedule.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 });
