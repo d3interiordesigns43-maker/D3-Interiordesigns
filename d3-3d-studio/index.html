@@ -91,6 +91,21 @@
 <div><label>Element width (mm)</label><input id="planItemWidth" type="number" min="50" value="900"></div>
 <div><label>Element depth (mm)</label><input id="planItemDepth" type="number" min="30" value="600"></div><div><label>Furniture height (mm)</label><input id="planItemHeight" type="number" min="50" value="720"></div>
 </div>
+<div class="fields" style="margin-top:10px">
+<div><label>Ready-made interior layout</label><select id="designLibraryPreset">
+<option value="">Choose a design template…</option>
+<option value="kitchen-straight">Kitchen · Straight / single wall</option>
+<option value="kitchen-l">Kitchen · L-shaped</option>
+<option value="kitchen-u">Kitchen · U-shaped</option>
+<option value="kitchen-galley">Kitchen · Parallel / galley</option>
+<option value="wardrobe-2">Wardrobe · 2-door</option>
+<option value="wardrobe-3">Wardrobe · 3-door</option>
+<option value="wardrobe-4">Wardrobe · 4-door</option>
+<option value="wardrobe-walkin">Wardrobe · Walk-in / U-shaped</option>
+<option value="tv-wall">Living room · TV wall</option>
+<option value="kitchen-island">Kitchen · Island layout</option>
+</select></div><div><label>Layout height (mm)</label><input id="designLibraryHeight" type="number" min="300" max="3000" value="900"></div>
+</div><div class="btns"><button type="button" id="applyDesignLibraryPreset">Add ready-made layout</button><span class="note">Templates add editable blocks to the 2D plan. Adjust dimensions and positions before approval.</span></div>
 <div class="btns"><button type="button" id="planAdd">Add element</button><button type="button" class="secondary" id="planRotate">Rotate selected 90°</button><button type="button" class="secondary" id="planDelete">Delete selected</button><button type="button" class="secondary" id="planSave">Save plan</button></div>
 <div class="btns"><button type="button" id="plan3DView">Render 3D Room</button><span class="note">Preview the room, walls and plan-positioned furniture in the 3D viewer.</span></div>
 <div id="planStatus" class="note" style="margin:8px 0">Save room dimensions above, then select a project.</div>
@@ -589,6 +604,30 @@ function drawRoomPlan(){
 }
 function plannerLoadForProject(){refreshPlannerProjects(el('planProject').value);planLoad()}
 el('planProject').addEventListener('change',planLoad);
+
+function createPlanLibraryItem(type,label,x,y,w,h,height){
+ const d=plannerDimensions(),id='lib-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);
+ w=Math.max(50,Math.min(d.w,w));h=Math.max(30,Math.min(d.h,h));
+ x=Math.max(0,Math.min(d.w-w,Math.round(x)));y=Math.max(0,Math.min(d.h-h,Math.round(y)));
+ return {id,type,label,x,y,w,h,height,rotation:0,libraryTemplate:true};
+}
+function applyDesignLibraryPreset(){
+ const preset=el('designLibraryPreset')?.value;if(!preset){alert('Choose a ready-made layout first.');return}
+ if(!el('planProject').value){alert('Select a project first.');return}
+ const d=plannerDimensions(),height=Math.max(300,Math.min(3000,Number(el('designLibraryHeight').value)||900)),items=[];
+ const edge=50,depth=600,unit=600,backY=edge;
+ const add=(type,label,x,y,w,h,ht=height)=>items.push(createPlanLibraryItem(type,label,x,y,w,h,ht));
+ if(preset==='kitchen-straight'){const w=Math.min(d.w-2*edge,Math.max(1800,Math.round(d.w*.65)));add('kitchen','Straight kitchen run',edge,backY,w,depth,height)}
+ if(preset==='kitchen-l'){const run=Math.min(d.w-edge,Math.max(1800,Math.round(d.w*.62))),side=Math.min(d.h-edge,Math.max(1500,Math.round(d.h*.55)));add('kitchen','L kitchen · main run',edge,backY,run,depth,height);add('kitchen','L kitchen · return',edge,backY+depth,depth,Math.max(300,side-depth),height)}
+ if(preset==='kitchen-u'){const run=Math.min(d.w-2*edge,Math.max(2100,Math.round(d.w*.68))),side=Math.min((d.h-edge)/2,Math.max(1500,Math.round(d.h*.48)));add('kitchen','U kitchen · back run',edge,edge,run,depth,height);add('kitchen','U kitchen · left return',edge,edge+depth,depth,Math.max(300,side-depth),height);add('kitchen','U kitchen · right return',edge+run-depth,edge+depth,depth,Math.max(300,side-depth),height)}
+ if(preset==='kitchen-galley'){const run=Math.min(d.w-2*edge,Math.max(1800,Math.round(d.w*.7))),gap=Math.max(900,Math.min(1400,d.h-2*depth-2*edge));add('kitchen','Galley · run A',edge,edge,run,depth,height);add('kitchen','Galley · run B',edge,edge+depth+gap,run,depth,height)}
+ if(preset.startsWith('wardrobe-')){const count=preset==='wardrobe-2'?2:preset==='wardrobe-3'?3:preset==='wardrobe-4'?4:0;if(count){const w=Math.min(d.w-2*edge,Math.max(1200,count*600));add('wardrobe',count+'-door wardrobe',Math.round((d.w-w)/2),edge,w,600,Math.max(1800,height))}else{const run=Math.min(d.w-2*edge,Math.max(1800,d.w*.55)),side=Math.min(d.h-2*edge,Math.max(1600,d.h*.5));add('wardrobe','Walk-in · back storage',edge,edge,run,600,Math.max(2100,height));add('wardrobe','Walk-in · left storage',edge,edge+600,600,Math.max(300,side-600),Math.max(2100,height));add('wardrobe','Walk-in · right storage',edge+run-600,edge+600,600,Math.max(300,side-600),Math.max(2100,height))}}
+ if(preset==='tv-wall'){const w=Math.min(d.w-2*edge,Math.max(1800,Math.round(d.w*.6)));add('tv','TV wall console',Math.round((d.w-w)/2),edge,w,450,550);add('tv','TV feature panel',Math.round((d.w-w)/2),edge+470,w,80,Math.min(2200,height+1000))}
+ if(preset==='kitchen-island'){const run=Math.min(d.w-2*edge,Math.max(1800,Math.round(d.w*.58)));add('kitchen','Kitchen wall run',edge,edge,run,depth,height);const iw=Math.min(1800,d.w-2*edge),id=Math.min(900,d.h-depth-2*edge);add('island','Kitchen island',Math.round((d.w-iw)/2),Math.max(edge+depth+900,Math.round(d.h*.55)),iw,id,900)}
+ if(!items.length)return;
+ planItems.push(...items);planSelected=items[0].id;drawRoomPlan();el('planStatus').textContent='Added '+items.length+' editable blocks from '+el('designLibraryPreset').selectedOptions[0].textContent+'. Drag, resize via element inputs, and review clearances before approval.';
+}
+el('applyDesignLibraryPreset').addEventListener('click',applyDesignLibraryPreset);
 el('planAdd').addEventListener('click',()=>{if(!el('planProject').value){alert('Select a project first.');return}const type=el('planItemType').value,d=plannerDimensions(),w=Math.max(50,Number(el('planItemWidth').value)||600),h=Math.max(30,Number(el('planItemDepth').value)||450),labels={kitchen:'Kitchen',wardrobe:'Wardrobe',tv:'TV unit',door:'Door',window:'Window',socket:'Socket',plumbing:'Plumbing',island:'Island'};const item={id:'item-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6),type,label:labels[type],x:Math.max(0,Math.round((d.w-w)/2)),y:Math.max(0,Math.round((d.h-h)/2)),w,h,height:Math.max(50,Number(el('planItemHeight').value)||720),rotation:0};planItems.push(item);planSelected=item.id;drawRoomPlan()});
 el('planRotate').addEventListener('click',()=>{const i=planItems.find(x=>x.id===planSelected);if(!i)return;[i.w,i.h]=[i.h,i.w];i.rotation=(i.rotation+90)%180;drawRoomPlan()});
 el('planDelete').addEventListener('click',()=>{if(!planSelected)return;planItems=planItems.filter(x=>x.id!==planSelected);planSelected='';drawRoomPlan()});
