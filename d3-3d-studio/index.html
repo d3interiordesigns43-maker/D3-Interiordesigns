@@ -306,8 +306,10 @@ function optimiseSheets(){
  const SL=Number(el('sheetL').value),SW=Number(el('sheetW').value),K=Number(el('kerf').value),M=Number(el('margin').value),allowRotation=!!el('allowSheetRotation')?.checked;
  if(![SL,SW,K,M].every(Number.isFinite)||SL<=0||SW<=0||K<0||M<0||2*M>=SL||2*M>=SW){el('optimiseResult').textContent='Please check sheet length, width, saw kerf and edge margin.';return null}
  const usableL=SL-2*M,usableW=SW-2*M,items=[];
- parts.forEach((p,pi)=>{const qty=Math.max(0,Math.floor(Number(p.qty)||0)),L=Number(p.L),W=Number(p.W);if(!Number.isFinite(L)||!Number.isFinite(W)||L<=0||W<=0)return;for(let n=0;n<qty;n++)items.push({name:p.name,partIndex:pi,L,W,copy:n+1})});
- if(!items.length){el('optimiseResult').textContent='No valid panels found. Build the cabinet or add panels to the panel schedule before calculating.';el('sheetPreview').innerHTML='';window.d3CuttingResult=null;return null}
+ const invalid=parts.filter(p=>{const qty=Number(p.qty),L=Number(p.L),W=Number(p.W);return !Number.isInteger(qty)||qty<1||qty>1000||!Number.isFinite(L)||!Number.isFinite(W)||L<=0||W<=0||L>10000||W>10000});
+ if(invalid.length){el('optimiseResult').textContent='Cutting layout stopped: '+invalid.map(p=>p.name||'Unnamed panel').join(', ')+' has an invalid size or quantity. Correct every panel before calculating; no panels were silently skipped.';el('sheetPreview').innerHTML='';window.d3CuttingResult=null;return null}
+ parts.forEach((p,pi)=>{const qty=Number(p.qty),L=Number(p.L),W=Number(p.W);for(let n=0;n<qty;n++)items.push({name:p.name,partIndex:pi,L,W,copy:n+1,grain:p.grain||'length'})});
+ if(!items.length){el('optimiseResult').textContent='No panels available. Build the cabinet or add panels before calculating.';el('sheetPreview').innerHTML='';window.d3CuttingResult=null;return null}
  items.sort((a,b)=>(b.L*b.W-a.L*a.W)||Math.max(b.L,b.W)-Math.max(a.L,a.W));
  const sheets=[];
  const orientations=item=>{const out=[{l:item.L,w:item.W,rot:false}];if(allowRotation&&item.L!==item.W)out.push({l:item.W,w:item.L,rot:true});return out};
@@ -342,7 +344,7 @@ function optimiseSheets(){
    row.usedL=best.x+best.o.l;
   }else{
    const candidates=orientations(item).filter(o=>o.l<=usableL&&o.w<=usableW).sort((a,b)=>(usableL-a.l)+(usableW-a.w)-(usableL-b.l)-(usableW-b.w));
-   if(!candidates.length){el('optimiseResult').textContent='Part does not fit inside the usable sheet area: '+item.name+' ('+item.L+' × '+item.W+' mm). Check sheet size, margin or rotation setting.';return null}
+   if(!candidates.length){el('optimiseResult').textContent='Part does not fit inside the usable sheet area: '+item.name+' ('+item.L+' × '+item.W+' mm). Check sheet size, margin or rotation setting. No cutting layout was produced.';el('sheetPreview').innerHTML='';window.d3CuttingResult=null;return null}
    const o=candidates[0],sh={rows:[{index:1,y:0,height:o.w,usedL:o.l,placements:[{...item,x:0,y:0,l:o.l,w:o.w,rot:o.rot}]}]};
    sheets.push(sh);
   }
