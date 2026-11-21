@@ -10,7 +10,7 @@
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-const host=document.querySelector('#canvas'),scene=new THREE.Scene();scene.background=new THREE.Color('#111821');
+const host=document.querySelector('#canvas'),scene=new THREE.Scene();scene.background=new THREE.Color('#111821');\nconst Winput=document.querySelector('#w'),Hinput=document.querySelector('#h'),Dinput=document.querySelector('#d'),Tinput=document.querySelector('#t'),Binput=document.querySelector('#b'),finishInput=document.querySelector('#finish'),scheduleEl=document.querySelector('#schedule'),buildBtn=document.querySelector('#build'),resetBtn=document.querySelector('#reset'),csvBtn=document.querySelector('#csv');
 const camera=new THREE.PerspectiveCamera(45,host.clientWidth/host.clientHeight,1,10000);camera.position.set(1500,1300,1700);
 const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(host.clientWidth,host.clientHeight);renderer.shadowMap.enabled=true;host.appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xffffff,0x526070,2));const light=new THREE.DirectionalLight(0xffffff,2.2);light.position.set(1200,1800,1200);scene.add(light);
@@ -18,13 +18,13 @@ const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamp
 const grid=new THREE.GridHelper(2500,25,0x52606c,0x293744);scene.add(grid);
 let cabinet=new THREE.Group();scene.add(cabinet);let panelRows=[];
 function box(x,y,z,sx,sy,sz,color){const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),new THREE.MeshStandardMaterial({color,roughness:.65}));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;cabinet.add(m);return m}
-function build(){cabinet.clear();const W=+w.value,H=+h.value,D=+d.value,T=+t.value,B=+b.value,clr=finish.value;cabinet.position.set(-W/2,0,-D/2);
+function build(){cabinet.clear();const W=+Winput.value,H=+Hinput.value,D=+Dinput.value,T=+Tinput.value,B=+Binput.value,clr=finishInput.value;cabinet.position.set(-W/2,0,-D/2);
 box(T/2,H/2,D/2,T,H,D,clr);box(W-T/2,H/2,D/2,T,H,D,clr);box(W/2,H-T/2,D/2,W-2*T,T,D,clr);box(W/2,T/2,D/2,W-2*T,T,D,clr);box(W/2,H/2,-D/2+B/2,W-2*T,H-2*T,B,'#b5b5b5');
 cabinet.position.set(-W/2,0,-D/2);
 panelRows=[{name:'Left side',qty:1,L:H,W:D,T},{name:'Right side',qty:1,L:H,W:D,T},{name:'Top',qty:1,L:W-2*T,W:D,T},{name:'Bottom',qty:1,L:W-2*T,W:D,T},{name:'Back',qty:1,L:H-2*T,W:W-2*T,T:B}];renderSchedule();camera.position.set(W*1.2,H*1.5,D*2.4);controls.target.set(0,H/2,0);}
-function renderSchedule(){schedule.innerHTML=panelRows.map((p,i)=>'<tr><td>'+p.name+'</td><td><input data-i="'+i+'" data-k="qty" value="'+p.qty+'"></td><td><input data-i="'+i+'" data-k="L" value="'+p.L+'"></td><td><input data-i="'+i+'" data-k="W" value="'+p.W+'"></td><td><input data-i="'+i+'" data-k="T" value="'+p.T+'"></td></tr>').join('');schedule.querySelectorAll('input').forEach(el=>el.addEventListener('change',e=>{const p=panelRows[+e.target.dataset.i];p[e.target.dataset.k]=+e.target.value;}));}
-build.addEventListener('click',build);reset.addEventListener('click',()=>{camera.position.set(1500,1300,1700);controls.target.set(0,360,0);});
-csv.addEventListener('click',()=>{let data='Panel,Qty,Length,Width,Thickness\n'+panelRows.map(p=>[p.name,p.qty,p.L,p.W,p.T].join(',')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'text/csv'}));a.download='D3-panel-schedule.csv';a.click();URL.revokeObjectURL(a.href);});
+function renderSchedule(){scheduleEl.innerHTML=panelRows.map((p,i)=>'<tr><td>'+p.name+'</td><td><input data-i="'+i+'" data-k="qty" value="'+p.qty+'"></td><td><input data-i="'+i+'" data-k="L" value="'+p.L+'"></td><td><input data-i="'+i+'" data-k="W" value="'+p.W+'"></td><td><input data-i="'+i+'" data-k="T" value="'+p.T+'"></td></tr>').join('');scheduleEl.querySelectorAll('input').forEach(el=>el.addEventListener('change',e=>{const p=panelRows[+e.target.dataset.i];p[e.target.dataset.k]=+e.target.value;}));}
+buildBtn.addEventListener('click',build);resetBtn.addEventListener('click',()=>{camera.position.set(1500,1300,1700);controls.target.set(0,360,0);});
+csvBtn.addEventListener('click',()=>{let data='Panel,Qty,Length,Width,Thickness\n'+panelRows.map(p=>[p.name,p.qty,p.L,p.W,p.T].join(',')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'text/csv'}));a.download='D3-panel-schedule.csv';a.click();URL.revokeObjectURL(a.href);});
 function resize(){camera.aspect=host.clientWidth/host.clientHeight;camera.updateProjectionMatrix();renderer.setSize(host.clientWidth,host.clientHeight)}window.addEventListener('resize',resize);
 function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)}animate();
 </script></body></html>
