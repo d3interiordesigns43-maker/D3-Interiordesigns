@@ -76,6 +76,18 @@
 </div>
 <div class="btns"><button type="button" id="roomSave">Save room measurements</button><button type="button" class="secondary" id="roomClear">Clear form</button></div>
 <div id="roomStatus" class="note" style="margin-top:8px">Select a project to load or create its room measurement record.</div>
+</div><div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px"><h4 style="color:var(--accent)">Interactive 2D Room Planner</h4>
+<p class="note">Choose a project and room dimensions, add furniture / openings / electrical points, then drag items on the plan. Planner coordinates are millimetres.</p>
+<div class="fields">
+<div><label>Planner project</label><select id="planProject"><option value="">Select project</option></select></div>
+<div><label>Add plan element</label><select id="planItemType"><option value="kitchen">Kitchen unit</option><option value="wardrobe">Wardrobe</option><option value="tv">TV unit</option><option value="door">Door opening</option><option value="window">Window</option><option value="socket">Electrical point</option><option value="plumbing">Plumbing point</option><option value="island">Island / peninsula</option></select></div>
+<div><label>Element width (mm)</label><input id="planItemWidth" type="number" min="50" value="900"></div>
+<div><label>Element depth (mm)</label><input id="planItemDepth" type="number" min="30" value="600"></div>
+</div>
+<div class="btns"><button type="button" id="planAdd">Add element</button><button type="button" class="secondary" id="planRotate">Rotate selected 90°</button><button type="button" class="secondary" id="planDelete">Delete selected</button><button type="button" class="secondary" id="planSave">Save plan</button></div>
+<div id="planStatus" class="note" style="margin:8px 0">Save room dimensions above, then select a project.</div>
+<div style="background:#0b1117;border:1px solid var(--line);border-radius:8px;overflow:hidden"><svg id="roomPlanSvg" viewBox="0 0 760 540" role="img" aria-label="Interactive room floor plan" style="width:100%;height:auto;display:block;touch-action:none"><rect width="760" height="540" fill="#0b1117"/><text x="380" y="270" fill="#9caebc" text-anchor="middle">Select a project and enter room dimensions</text></svg></div>
+<div id="planLegend" class="note" style="margin-top:8px">Drag elements to reposition. Select an item to highlight it.</div>
 </div><div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px"><h4 style="color:var(--accent)">Project management · workflow</h4>
 <p class="note">Track each interior project from enquiry to installation. Project records are stored in this browser and are separate from the quotation register.</p>
 <div class="fields">
@@ -396,6 +408,32 @@ el('roomProject').addEventListener('change',e=>loadRoomRecord(e.target.value));
 el('roomClear').addEventListener('click',clearRoomForm);
 el('roomSave').addEventListener('click',()=>{const projectId=el('roomProject').value,p=readProjects().find(x=>x.id===projectId);if(!p){alert('Create or select a project first.');return}const numeric=['roomLength','roomWidth','roomHeight','roomCeiling','roomFloor','wallA','wallB','wallC','wallD'];for(const id of numeric){const raw=el(id).value;if(raw!==''&&(!Number.isFinite(Number(raw))||(id!=='roomFloor'&&Number(raw)<0))){alert('Check the numeric value in '+id+'.');return}}if(!el('roomLength').value||!el('roomWidth').value||!el('roomHeight').value){alert('Enter room length, width and height.');return}const old=readRoomRecords(),now=new Date().toISOString(),record={projectId,projectReference:p.reference,projectName:p.name,roomLength:Number(el('roomLength').value),roomWidth:Number(el('roomWidth').value),roomHeight:Number(el('roomHeight').value),roomCeiling:el('roomCeiling').value===''?'':Number(el('roomCeiling').value),roomFloor:el('roomFloor').value===''?'':Number(el('roomFloor').value),roomDate:el('roomDate').value||localDateInputValue(),roomNotes:el('roomNotes').value.trim(),walls:{},updatedAt:now,createdAt:old.find(x=>x.projectId===projectId)?.createdAt||now};for(const side of ['A','B','C','D'])record.walls[side]={length:el('wall'+side).value===''?'':Number(el('wall'+side).value),notes:el('wall'+side+'Notes').value.trim()};const idx=old.findIndex(x=>x.projectId===projectId);if(idx>=0)old[idx]=record;else old.push(record);if(writeRoomRecords(old))el('roomStatus').textContent='Room measurements saved for '+p.name+'. Records remain in this browser only.'});
 function refreshRoomManagement(){refreshRoomProjects(el('roomProject').value)}
+const PLAN_KEY='d3_interactive_room_plans_v1';let planItems=[],planSelected='',planDrag=null;
+function readPlans(){try{const v=JSON.parse(localStorage.getItem(PLAN_KEY)||'{}');return v&&typeof v==='object'?v:{}}catch(e){return{}}}
+function plannerDimensions(){return {w:Math.max(1,Number(el('roomLength').value)||4000),h:Math.max(1,Number(el('roomWidth').value)||3200)}}
+function refreshPlannerProjects(selected=''){const ps=readProjects();el('planProject').innerHTML='<option value="">Select project</option>'+ps.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.reference||'')+' · '+esc(p.name)+'</option>').join('');el('planProject').value=selected}
+function planLoad(){const id=el('planProject').value,plans=readPlans();planItems=id&&Array.isArray(plans[id])?plans[id].map(x=>({...x})):[];planSelected='';drawRoomPlan();el('planStatus').textContent=id?(planItems.length+' saved plan elements loaded. Drag to arrange.'):'Select a project to start.'}
+function planSvgPoint(e){const svg=el('roomPlanSvg'),p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const q=p.matrixTransform(svg.getScreenCTM().inverse());return q}
+function drawRoomPlan(){
+ const svg=el('roomPlanSvg'),d=plannerDimensions(),scale=Math.min(620/d.w,410/d.h),rw=d.w*scale,rh=d.h*scale,x=(760-rw)/2,y=(540-rh)/2;
+ let out='<defs><pattern id="planGrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="#253441" stroke-width=".7"/></pattern></defs><rect width="760" height="540" fill="#0b1117"/><rect x="'+x+'" y="'+y+'" width="'+rw+'" height="'+rh+'" fill="url(#planGrid)" stroke="#e7edf2" stroke-width="5"/><text x="'+(x+rw/2)+'" y="'+(y-16)+'" fill="#eef3f6" font-size="13" text-anchor="middle">'+d.w+' mm</text><text x="'+(x-14)+'" y="'+(y+rh/2)+'" fill="#eef3f6" font-size="13" text-anchor="middle" transform="rotate(-90 '+(x-14)+' '+(y+rh/2)+')">'+d.h+' mm</text>';
+ const colors={kitchen:'#b88b50',wardrobe:'#9b7cba',tv:'#4c91b8',door:'#d8a65c',window:'#62b7c4',socket:'#e3d16f',plumbing:'#68b58b',island:'#c27d72'};
+ planItems.forEach(item=>{const ix=x+(Number(item.x)||0)*scale,iy=y+(Number(item.y)||0)*scale,iw=Math.max(8,(Number(item.w)||600)*scale),ih=Math.max(8,(Number(item.h)||450)*scale),selected=item.id===planSelected;out+='<g data-plan-id="'+esc(item.id)+'" style="cursor:move"><rect x="'+ix+'" y="'+iy+'" width="'+iw+'" height="'+ih+'" rx="3" fill="'+(colors[item.type]||'#777')+'" fill-opacity=".78" stroke="'+(selected?'#ffffff':'#18232c')+'" stroke-width="'+(selected?3:1.5)+'"/><text x="'+(ix+iw/2)+'" y="'+(iy+ih/2+4)+'" fill="#10151c" font-size="'+Math.max(9,Math.min(13,iw/5))+'" font-weight="700" text-anchor="middle" pointer-events="none">'+esc(item.label||item.type)+'</text></g>'});
+ svg.innerHTML=out;
+ el('planLegend').textContent='Room '+d.w+' × '+d.h+' mm · '+planItems.length+' elements · '+(planSelected?'Selected: '+(planItems.find(i=>i.id===planSelected)?.label||'element'):'No item selected')+'. Drag items to reposition.';
+}
+function plannerLoadForProject(){refreshPlannerProjects(el('planProject').value);planLoad()}
+el('planProject').addEventListener('change',planLoad);
+el('planAdd').addEventListener('click',()=>{if(!el('planProject').value){alert('Select a project first.');return}const type=el('planItemType').value,d=plannerDimensions(),w=Math.max(50,Number(el('planItemWidth').value)||600),h=Math.max(30,Number(el('planItemDepth').value)||450),labels={kitchen:'Kitchen',wardrobe:'Wardrobe',tv:'TV unit',door:'Door',window:'Window',socket:'Socket',plumbing:'Plumbing',island:'Island'};const item={id:'item-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6),type,label:labels[type],x:Math.max(0,Math.round((d.w-w)/2)),y:Math.max(0,Math.round((d.h-h)/2)),w,h,rotation:0};planItems.push(item);planSelected=item.id;drawRoomPlan()});
+el('planRotate').addEventListener('click',()=>{const i=planItems.find(x=>x.id===planSelected);if(!i)return;[i.w,i.h]=[i.h,i.w];i.rotation=(i.rotation+90)%180;drawRoomPlan()});
+el('planDelete').addEventListener('click',()=>{if(!planSelected)return;planItems=planItems.filter(x=>x.id!==planSelected);planSelected='';drawRoomPlan()});
+el('planSave').addEventListener('click',()=>{const id=el('planProject').value;if(!id){alert('Select a project first.');return}const d=plannerDimensions(),plans=readPlans();plans[id]={roomWidth:d.w,roomDepth:d.h,items:planItems,updatedAt:new Date().toISOString()};try{localStorage.setItem(PLAN_KEY,JSON.stringify(plans));el('planStatus').textContent='Plan saved for this project in this browser.'}catch(e){alert('Could not save plan. Browser storage may be full or disabled.')}});
+el('roomPlanSvg').addEventListener('pointerdown',e=>{const g=e.target.closest('[data-plan-id]');if(!g)return;planSelected=g.getAttribute('data-plan-id');const p=planSvgPoint(e),d=plannerDimensions(),scale=Math.min(620/d.w,410/d.h),rw=d.w*scale,rh=d.h*scale,x=(760-rw)/2,y=(540-rh)/2,item=planItems.find(i=>i.id===planSelected);if(!item)return;planDrag={id:item.id,dx:(p.x-x)/scale-item.x,dy:(p.y-y)/scale-item.y};el('roomPlanSvg').setPointerCapture(e.pointerId);drawRoomPlan()});
+el('roomPlanSvg').addEventListener('pointermove',e=>{if(!planDrag)return;const p=planSvgPoint(e),d=plannerDimensions(),scale=Math.min(620/d.w,410/d.h),rw=d.w*scale,rh=d.h*scale,x=(760-rw)/2,y=(540-rh)/2,item=planItems.find(i=>i.id===planDrag.id);if(!item)return;item.x=Math.max(0,Math.min(d.w-item.w,Math.round((p.x-x)/scale-planDrag.dx)));item.y=Math.max(0,Math.min(d.h-item.h,Math.round((p.y-y)/scale-planDrag.dy)));drawRoomPlan()});
+el('roomPlanSvg').addEventListener('pointerup',()=>{planDrag=null});el('roomPlanSvg').addEventListener('pointercancel',()=>{planDrag=null});
+for(const id of ['roomLength','roomWidth'])el(id).addEventListener('input',drawRoomPlan);
+function refreshInteractivePlanner(){refreshPlannerProjects(el('planProject').value);planLoad()}
+
 function quotePaymentsTotal(q){return Array.isArray(q.payments)?q.payments.reduce((sum,p)=>sum+Math.max(0,Number(p.amount)||0),0):0}
 function renderQuotationRegister(){
  const all=readQuoteHistory(),term=(el('quoteRegisterSearch').value||'').trim().toLowerCase(),from=el('quoteRegisterFrom').value?new Date(el('quoteRegisterFrom').value+'T00:00:00'):null,to=el('quoteRegisterTo').value?new Date(el('quoteRegisterTo').value+'T23:59:59'):null;
@@ -439,6 +477,7 @@ if(!el('pmStartDate').value)el('pmStartDate').value=localDateInputValue();
 refreshProjectManagement();
 if(!el('roomDate').value)el('roomDate').value=localDateInputValue();
 refreshRoomManagement();
+refreshInteractivePlanner();
 
 document.querySelectorAll('#quotationSection input').forEach(input=>input.addEventListener('input',updateQuotation));
 
