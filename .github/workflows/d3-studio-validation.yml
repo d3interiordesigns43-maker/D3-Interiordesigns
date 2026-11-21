@@ -74,8 +74,11 @@ jobs:
           if audit.script_types.count("module") != 1:
               print("Expected exactly one module script; found", audit.script_types.count("module"))
               sys.exit(1)
-          if len(audit.script_types) != 1:
-              print("Unexpected additional script tags:", audit.script_types)
+          if audit.script_types.count("importmap") != 1:
+              print("Expected exactly one import map; found", audit.script_types.count("importmap"))
+              sys.exit(1)
+          if len(audit.script_types) != 2:
+              print("Unexpected script tags:", audit.script_types)
               sys.exit(1)
           module = "".join(audit.module_parts).strip()
           if not module:
