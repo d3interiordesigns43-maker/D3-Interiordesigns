@@ -306,7 +306,8 @@ function optimiseSheets(){
  if(![SL,SW,K,M].every(Number.isFinite)||SL<=0||SW<=0||K<0||M<0||2*M>=SL||2*M>=SW){el('optimiseResult').textContent='Please check sheet length, width, saw kerf and edge margin.';return null}
  const usableL=SL-2*M,usableW=SW-2*M,items=[];
  parts.forEach((p,pi)=>{const qty=Math.max(0,Math.floor(Number(p.qty)||0)),L=Number(p.L),W=Number(p.W);if(!Number.isFinite(L)||!Number.isFinite(W)||L<=0||W<=0)return;for(let n=0;n<qty;n++)items.push({name:p.name,partIndex:pi,L,W,copy:n+1})});
- if(!items.length){el('optimiseResult').textContent='No valid panels found. Build the cabinet or add panels to the panel schedule before calculating.';el('sheetPreview').innerHTML='';window.d3CuttingResult=null;return null}\n items.sort((a,b)=>(b.L*b.W-a.L*a.W)||Math.max(b.L,b.W)-Math.max(a.L,a.W));
+ if(!items.length){el('optimiseResult').textContent='No valid panels found. Build the cabinet or add panels to the panel schedule before calculating.';el('sheetPreview').innerHTML='';window.d3CuttingResult=null;return null}
+ items.sort((a,b)=>(b.L*b.W-a.L*a.W)||Math.max(b.L,b.W)-Math.max(a.L,a.W));
  const sheets=[];
  const orientations=item=>{const out=[{l:item.L,w:item.W,rot:false}];if(allowRotation&&item.L!==item.W)out.push({l:item.W,w:item.L,rot:true});return out};
  for(const item of items){
