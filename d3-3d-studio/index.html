@@ -356,8 +356,15 @@ function optimiseSheets(){
   const usedH=sh.rows.length?sh.rows[sh.rows.length-1].y+sh.rows[sh.rows.length-1].height:0,bottom=usableW-usedH;
   if(bottom>K&&usableL>K)offcuts.push({sheet:si+1,x:M,y:M+usedH+K,w:usableL,h:bottom-K,kind:'Bottom offcut'});
  });
- const fmt=n=>Math.round(n),moneyArea=n=>(n/1e6).toFixed(2);
- el('optimiseResult').innerHTML='<strong>Estimated sheets: '+sheets.length+'</strong><br>Parts: '+items.length+' · Net part area: '+moneyArea(totalArea)+' m²<br>Stock area: '+moneyArea(stockArea)+' m² · Net area utilisation: '+util.toFixed(1)+'%<br>Estimated unused area (includes kerf, margins and offcuts): '+moneyArea(Math.max(0,stockArea-totalArea))+' m²<br>Offcut rectangles identified: '+offcuts.length+' · Saw kerf: '+K+' mm · Edge margin: '+M+' mm<br><span style="color:var(--muted)">Rotation: '+(allowRotation?'Allowed':'Locked to entered grain direction')+'. Cut sequence is horizontal strip cuts first, then vertical part cuts within each strip.</span>';
+ const cutSequence=[];
+ sheets.forEach((sh,si)=>{
+  // Stage 1: cross-cut the sheet into horizontal strips.
+  sh.rows.forEach((row,ri)=>{if(ri>0)cutSequence.push({sequence:cutSequence.length+1,sheet:si+1,stage:'Horizontal strip cut',x1:M,y1:M+row.y-K/2,x2:M+usableL,y2:M+row.y-K/2,length:usableL,kerf:K,reference:'Before strip '+(ri+1)})});
+  // Stage 2: rip each strip into individual parts.
+  sh.rows.forEach((row,ri)=>row.placements.forEach((p,pi)=>{if(pi>0)cutSequence.push({sequence:cutSequence.length+1,sheet:si+1,stage:'Vertical part cut',x1:M+p.x-K/2,y1:M+row.y,x2:M+p.x-K/2,y2:M+row.y+row.height,length:row.height,kerf:K,reference:'Strip '+(ri+1)+' · before '+p.name})}));
+ });
+ const recoverableOffcutArea=offcuts.reduce((n,o)=>n+o.w*o.h,0),fmt=n=>Math.round(n),moneyArea=n=>(n/1e6).toFixed(2);
+ el('optimiseResult').innerHTML='<strong>Estimated sheets: '+sheets.length+'</strong><br>Parts: '+items.length+' · Net part area: '+moneyArea(totalArea)+' m²<br>Stock area: '+moneyArea(stockArea)+' m² · Net area utilisation: '+util.toFixed(1)+'%<br>Total unused area (kerf + margins + offcuts): '+moneyArea(Math.max(0,stockArea-totalArea))+' m²<br>Recoverable offcut area: '+moneyArea(recoverableOffcutArea)+' m² · Offcut rectangles: '+offcuts.length+'<br>Cut operations: '+cutSequence.length+' · Saw kerf: '+K+' mm · Edge margin: '+M+' mm<br><span style="color:var(--muted)">Sequence: all horizontal strip cuts first, then vertical part cuts in each strip. Rotation: '+(allowRotation?'Allowed':'Locked to entered grain direction')+'.</span>';
  const preview=el('sheetPreview'),esc=v=>String(v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
  preview.innerHTML=sheets.map((sh,si)=>{
   const vbW=560,vbH=vbW*SW/SL,scale=vbW/SL,partsSvg=[],wasteSvg=[],cutsSvg=[];
@@ -379,16 +386,17 @@ function optimiseSheets(){
   const dims='<text x="'+(vbW/2)+'" y="12" text-anchor="middle" font-size="10" fill="#222">'+SL+' mm</text><text x="12" y="'+(vbH/2)+'" transform="rotate(-90 12 '+(vbH/2)+')" text-anchor="middle" font-size="10" fill="#222">'+SW+' mm</text>';
   return '<div style="background:#f7f7f4;color:#18212a;padding:8px;border-radius:8px"><strong>Sheet '+(si+1)+' — '+SL+' × '+SW+' mm</strong><div style="font-size:11px;color:#39464d">Red = horizontal strip cut · Blue = vertical part cut · Grey = waste/offcut · Dimensions in mm</div><svg viewBox="0 0 '+vbW+' '+vbH+'" width="100%" role="img" aria-label="Dimensioned guillotine cutting layout sheet '+(si+1)+'">'+trim+partsSvg.join('')+wasteSvg.join('')+cutsSvg.join('')+dims+'</svg></div>';
  }).join('');
- const result={SL,SW,K,M,items,sheets,totalArea,stockArea,util,offcuts,allowRotation};
+ const result={SL,SW,K,M,items,sheets,totalArea,stockArea,util,offcuts,recoverableOffcutArea,cutSequence,allowRotation};
  window.d3CuttingResult=result;
  return result;
 }
 el('exportCutLayout').addEventListener('click',()=>{
  const r=optimiseSheets();if(!r)return;
- const rows=[['Record','Sheet','Part','Length mm','Width mm','X mm','Y mm','Rotated','Cut sequence / type']];
- r.sheets.forEach((sh,si)=>sh.rows.forEach((row,ri)=>row.placements.forEach((p,pi)=>rows.push(['PART',si+1,p.name,p.L,p.W,Math.round(r.M+p.x),Math.round(r.M+p.y),p.rot?'Yes':'No','Strip '+(ri+1)+' · part '+(pi+1)]))));
- r.offcuts.forEach(o=>rows.push(['OFFCUT',o.sheet,o.kind,o.w,o.h,o.x,o.y,'No','Waste rectangle']));
- rows.push([],['SETTINGS','','Sheet length',r.SL,'Sheet width',r.SW,'Kerf',r.K,'Edge margin',r.M,'Rotation allowed',r.allowRotation?'Yes':'No']);
+ const rows=[['Record','Sequence','Sheet','Part / operation','Length mm','Width mm','X1 mm','Y1 mm','X2 mm','Y2 mm','Rotated','Cut sequence / type']];
+ r.sheets.forEach((sh,si)=>sh.rows.forEach((row,ri)=>row.placements.forEach((p,pi)=>rows.push(['PART','',si+1,p.name,p.L,p.W,Math.round(r.M+p.x),Math.round(r.M+p.y),'','',p.rot?'Yes':'No','Strip '+(ri+1)+' · part '+(pi+1)]))));
+ r.cutSequence.forEach(c=>rows.push(['CUT',c.sequence,c.sheet,c.stage,c.length,'',c.x1,c.y1,c.x2,c.y2,'No',c.reference+' · kerf '+c.kerf+' mm']));
+ r.offcuts.forEach(o=>rows.push(['OFFCUT','',o.sheet,o.kind,o.w,o.h,o.x,o.y,'','', 'No','Recoverable rectangle · '+(o.w*o.h/1e6).toFixed(3)+' m²']));
+ rows.push([],['SETTINGS','','Sheet length',r.SL,'Sheet width',r.SW,'Kerf',r.K,'Edge margin',r.M,'Rotation allowed',r.allowRotation?'Yes':'No'],['SUMMARY','','Parts',r.items.length,'Sheets',r.sheets.length,'Cut operations',r.cutSequence.length,'Recoverable offcut area m²',(r.recoverableOffcutArea/1e6).toFixed(3)]);
  const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
  const blob=new Blob(['\ufeff',csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='D3-cutting-layout.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 });
