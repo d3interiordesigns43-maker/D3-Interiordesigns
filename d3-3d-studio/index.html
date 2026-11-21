@@ -1047,8 +1047,20 @@ function renderUnitConnectionMap(){
  const body=el('unitConnectionRows'),summary=el('unitConnectionSummary');
  if(!unitPanelSchedule.length){body.innerHTML='<tr><td colspan="6">Generate a panel schedule first.</td></tr>';summary.textContent='Generate a panel schedule to map joints.';window.d3UnitConnections=[];return}
  const find=n=>unitPanelSchedule.find(p=>p.name===n),left=find('Left side'),right=find('Right side'),top=find('Top'),bottom=find('Bottom'),back=find('Back panel'),shelves=unitPanelSchedule.filter(p=>/^Shelf /.test(p.name));
- const rows=[];if(left&&top)rows.push(['Top-left','Left side','Top','Generic Minifix / dowel allowance',2,'Unverified · drawing required']);if(right&&top)rows.push(['Top-right','Right side','Top','Generic Minifix / dowel allowance',2,'Unverified · drawing required']);if(left&&bottom)rows.push(['Bottom-left','Left side','Bottom','Generic Minifix / dowel allowance',2,'Unverified · drawing required']);if(right&&bottom)rows.push(['Bottom-right','Right side','Bottom','Generic Minifix / dowel allowance',2,'Unverified · drawing required']);if(back&&left)rows.push(['Back-left','Back panel','Left side','Back fixing method not selected',0,'Not specified']);if(back&&right)rows.push(['Back-right','Back panel','Right side','Back fixing method not selected',0,'Not specified']);for(const p of shelves)rows.push(['Shelf support',p.name,'Left / right sides','Shelf supports (model-dependent)',4,'Unverified · SKU required']);
- body.innerHTML=rows.length?rows.map(r=>'<tr>'+r.map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="6">No generic joints found.</td></tr>';summary.textContent=rows.length+' joint groups mapped · quantities are generic planning allowances, not drilling instructions.';window.d3UnitConnections=rows;
+ const rows=[];
+ const joint=(name,a,b,kind,qty,status)=>rows.push({name,a,b,kind,qty,status});
+ if(left&&top)joint('Top-left','Left side','Top','Minifix connector set',2,'Generic allowance · confirm actual joint locations');
+ if(right&&top)joint('Top-right','Right side','Top','Minifix connector set',2,'Generic allowance · confirm actual joint locations');
+ if(left&&bottom)joint('Bottom-left','Left side','Bottom','Minifix connector set',2,'Generic allowance · confirm actual joint locations');
+ if(right&&bottom)joint('Bottom-right','Right side','Bottom','Minifix connector set',2,'Generic allowance · confirm actual joint locations');
+ if(back&&left)joint('Back-left','Back panel','Left side','Back fixing (select method)',0,'Method not specified');
+ if(back&&right)joint('Back-right','Back panel','Right side','Back fixing (select method)',0,'Method not specified');
+ for(const p of shelves)joint('Shelf support',p.name,'Left / right sides','Shelf-support allowance',4,'SKU and bore details unverified');
+ const types=['Minifix connector set','Dowel allowance','Confirmat screw allowance','Shelf-support allowance','Back fixing (select method)','Other / manual'];
+ body.innerHTML=rows.length?rows.map((r,i)=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(r.a)+'</td><td>'+esc(r.b)+'</td><td><select data-conn-index="'+i+'" data-conn-field="kind">'+types.map(t=>'<option '+(t===r.kind?'selected':'')+'>'+t+'</option>').join('')+'</select></td><td><input type="number" min="0" max="999" step="1" value="'+r.qty+'" data-conn-index="'+i+'" data-conn-field="qty" style="width:65px"></td><td>'+esc(r.status)+'</td></tr>').join(''):'<tr><td colspan="6">No generic joints found.</td></tr>';
+ summary.textContent=rows.length+' joint groups mapped · connector type and quantities editable; no machine drilling coordinates implied';
+ window.d3UnitConnections=rows.map(r=>[r.name,r.a,r.b,r.kind,r.qty,r.status]);
+ body.onchange=function(e){const i=Number(e.target.dataset.connIndex),f=e.target.dataset.connField;if(!Number.isInteger(i)||!rows[i]||!f)return;if(f==='qty'){const v=Number(e.target.value);if(!Number.isInteger(v)||v<0||v>999){alert('Quantity must be 0–999.');renderUnitConnectionMap();return}rows[i].qty=v}else if(f==='kind')rows[i].kind=e.target.value;window.d3UnitConnections=rows.map(r=>[r.name,r.a,r.b,r.kind,r.qty,r.status]);summary.textContent=rows.length+' joint groups mapped · edits included in connection CSV';};
 }
 function generateUnitPanelSchedule(){
  const item=planItems.find(i=>i.id===planSelected);
