@@ -22,15 +22,21 @@ await new Promise((resolveListen, reject) => {
 
 let browser;
 try {
-  browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader'] });
+  browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--enable-webgl', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader', '--use-gl=angle', '--use-angle=swiftshader'] });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true });
   const pageErrors = [];
+  const consoleErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); });
 
   const address = server.address();
   await page.goto(`http://127.0.0.1:${address.port}/`, { waitUntil: 'networkidle', timeout: 45000 });
   assert.match(await page.title(), /D3 3D Cabinet Studio/);
-  await page.waitForSelector('#canvas canvas', { timeout: 20000 });
+  try {
+    await page.waitForSelector('#canvas canvas', { timeout: 20000 });
+  } catch (error) {
+    throw new Error(`3D renderer did not initialise. Console errors: ${consoleErrors.join(' | ')}. Page errors: ${pageErrors.join(' | ')}. ${error.message}`);
+  }
 
   await page.locator('#build').click();
   await page.waitForFunction(() => document.querySelectorAll('#schedule tr').length >= 5);
