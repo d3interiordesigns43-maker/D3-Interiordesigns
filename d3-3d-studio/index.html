@@ -838,7 +838,7 @@ function renderRoomScene(){
  const furniture={kitchen:el('roomFurnitureFinish')?.value||'#b88b50',wardrobe:el('roomFurnitureFinish')?.value||'#9b7cba',tv:el('roomFurnitureFinish')?.value||'#4c91b8',island:el('roomFurnitureFinish')?.value||'#c27d72'};
  planItems.forEach(item=>{
   const x0=Number(item.x)||0,z0=Number(item.y)||0,w=Math.max(30,Number(item.w)||600),d=Math.max(30,Number(item.h)||450),rot=((Number(item.rotation)||0)%180)!==0;
-  const fw=rot?d:w,fd=rot?w:d,cx=-length/2+x0+w/2,cz=-width/2+z0+d/2;
+  const fw=rot?d:w,fd=rot?w:d,cx=-length/2+x0+fw/2,cz=-width/2+z0+fd/2;
   if(['kitchen','wardrobe','tv','island'].includes(item.type)){
    const fh=Math.max(50,Math.min(height,Number(item.height)||720));
    const mesh=addBox(fw,fh,fd,cx,fh/2,cz,mat(furniture[item.type]||'#b88b50'));if(mesh)mesh.userData.planItemId=item.id;
