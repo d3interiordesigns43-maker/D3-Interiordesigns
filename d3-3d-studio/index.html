@@ -51,7 +51,32 @@
 <div><label>Profit margin (%)</label><input id="quoteProfit" type="number" min="0" max="100" step="0.1" value="0"></div>
 <div><label>GST / VAT (%)</label><input id="quoteTax" type="number" min="0" max="100" step="0.1" value="0"></div>
 </div><div id="quotationPreview" class="note" style="margin-top:10px"></div><div class="btns"><button type="button" id="printQuotation" class="secondary">Print quotation / Save PDF</button></div>
-<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px"><h4 style="color:var(--accent)">Project management · workflow</h4>
+<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px"><h4 style="color:var(--accent)">Room measurement & wall schedule</h4>
+<p class="note">Save room dimensions, wall-by-wall lengths and opening / electrical notes against an existing project.</p>
+<div class="fields">
+<div style="grid-column:1/-1"><label>Project</label><select id="roomProject"><option value="">Select project</option></select></div>
+<div><label>Room length (mm)</label><input id="roomLength" type="number" min="1" step="1" placeholder="4000"></div>
+<div><label>Room width (mm)</label><input id="roomWidth" type="number" min="1" step="1" placeholder="3200"></div>
+<div><label>Room height (mm)</label><input id="roomHeight" type="number" min="1" step="1" placeholder="2700"></div>
+<div><label>Ceiling / false ceiling height (mm)</label><input id="roomCeiling" type="number" min="0" step="1" placeholder="Optional"></div>
+<div><label>Floor level / step (mm)</label><input id="roomFloor" type="number" step="1" placeholder="0"></div>
+<div><label>Measurement date</label><input id="roomDate" type="date"></div>
+</div>
+<h4 style="color:var(--accent);margin:14px 0 8px">Wall-wise measurements (mm)</h4>
+<div class="fields">
+<div><label>Wall A length</label><input id="wallA" type="number" min="0" placeholder="4000"></div>
+<div><label>Wall A openings / sockets</label><input id="wallANotes" maxlength="240" placeholder="Door 900×2100 at left…"></div>
+<div><label>Wall B length</label><input id="wallB" type="number" min="0" placeholder="3200"></div>
+<div><label>Wall B openings / sockets</label><input id="wallBNotes" maxlength="240" placeholder="Window, switch, plumbing…"></div>
+<div><label>Wall C length</label><input id="wallC" type="number" min="0" placeholder="4000"></div>
+<div><label>Wall C openings / sockets</label><input id="wallCNotes" maxlength="240" placeholder="Window / beam / obstruction…"></div>
+<div><label>Wall D length</label><input id="wallD" type="number" min="0" placeholder="3200"></div>
+<div><label>Wall D openings / sockets</label><input id="wallDNotes" maxlength="240" placeholder="Door / electrical points…"></div>
+<div style="grid-column:1/-1"><label>Site notes / dimensions to verify</label><input id="roomNotes" maxlength="600" placeholder="Column sizes, plumbing, gas point, uneven wall…"></div>
+</div>
+<div class="btns"><button type="button" id="roomSave">Save room measurements</button><button type="button" class="secondary" id="roomClear">Clear form</button></div>
+<div id="roomStatus" class="note" style="margin-top:8px">Select a project to load or create its room measurement record.</div>
+</div><div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px"><h4 style="color:var(--accent)">Project management · workflow</h4>
 <p class="note">Track each interior project from enquiry to installation. Project records are stored in this browser and are separate from the quotation register.</p>
 <div class="fields">
 <div><label>Project name</label><input id="pmName" maxlength="140" placeholder="e.g. Smith family modular kitchen"></div>
@@ -361,6 +386,16 @@ el('pmSearch').addEventListener('input',renderProjects);
 el('pmCustomer').addEventListener('change',()=>{const c=readCustomers().find(x=>x.id===el('pmCustomer').value);if(c&&!el('pmAddress').value.trim())el('pmAddress').value=c.address||''});
 el('pmRows').addEventListener('click',e=>{const edit=e.target.closest('[data-pm-edit]'),load=e.target.closest('[data-pm-load]'),del=e.target.closest('[data-pm-delete]'),button=edit||load||del;if(!button)return;const id=button.getAttribute('data-pm-edit')||button.getAttribute('data-pm-load')||button.getAttribute('data-pm-delete'),p=readProjects().find(x=>x.id===id);if(!p)return;if(edit){el('pmName').value=p.name||'';el('pmReference').value=p.reference||'';refreshProjectCustomers(p.customerId||'');el('pmStage').value=PM_STAGES.includes(p.stage)?p.stage:'Enquiry';el('pmStartDate').value=p.startDate||'';el('pmTargetDate').value=p.targetDate||'';el('pmAddress').value=p.address||'';el('pmNotes').value=p.notes||'';el('pmSave').dataset.editId=p.id;return}if(load){if(!p.dimensions){alert('This project has no saved cabinet dimensions.');return}el('w').value=p.dimensions.width;el('h').value=p.dimensions.height;el('d').value=p.dimensions.depth;el('t').value=p.dimensions.boardThickness;el('b').value=p.dimensions.backThickness;el('build').click();return}if(del){if(!confirm('Delete this project record? Customer profiles and quotations will remain unchanged.'))return;if(writeProjects(readProjects().filter(x=>x.id!==id))){renderProjects();if(el('pmSave').dataset.editId===id)pmClear()}}});
 function refreshProjectManagement(){refreshProjectCustomers(el('pmCustomer').value);renderProjects()}
+const ROOM_KEY='d3_room_measurements_v1';
+function readRoomRecords(){try{const v=JSON.parse(localStorage.getItem(ROOM_KEY)||'[]');return Array.isArray(v)?v.filter(x=>x&&typeof x.projectId==='string'):[]}catch(e){return[]}}
+function writeRoomRecords(items){try{localStorage.setItem(ROOM_KEY,JSON.stringify(items));return true}catch(e){alert('Could not save room measurements. Browser storage may be full or disabled.');return false}}
+function refreshRoomProjects(selected=''){const ps=readProjects();el('roomProject').innerHTML='<option value="">Select project</option>'+ps.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.reference||'')+' · '+esc(p.name)+'</option>').join('');el('roomProject').value=selected}
+function clearRoomForm(){for(const id of ['roomLength','roomWidth','roomHeight','roomCeiling','roomFloor','wallA','wallB','wallC','wallD','wallANotes','wallBNotes','wallCNotes','wallDNotes','roomNotes'])el(id).value='';el('roomDate').value=localDateInputValue();el('roomStatus').textContent='Form cleared. Select a project to enter measurements.'}
+function loadRoomRecord(projectId){const p=readProjects().find(x=>x.id===projectId),r=readRoomRecords().find(x=>x.projectId===projectId);clearRoomForm();if(!p){el('roomStatus').textContent='Select a project first.';return}if(!r){el('roomStatus').textContent='No room record yet for '+p.name+'. Enter measurements and save.';return}for(const id of ['roomLength','roomWidth','roomHeight','roomCeiling','roomFloor','roomDate','roomNotes'])el(id).value=r[id]??'';for(const side of ['A','B','C','D']){el('wall'+side).value=r.walls?.[side]?.length??'';el('wall'+side+'Notes').value=r.walls?.[side]?.notes??''}el('roomStatus').textContent='Loaded saved measurements for '+p.name+'. Last updated '+new Date(r.updatedAt).toLocaleString()}
+el('roomProject').addEventListener('change',e=>loadRoomRecord(e.target.value));
+el('roomClear').addEventListener('click',clearRoomForm);
+el('roomSave').addEventListener('click',()=>{const projectId=el('roomProject').value,p=readProjects().find(x=>x.id===projectId);if(!p){alert('Create or select a project first.');return}const numeric=['roomLength','roomWidth','roomHeight','roomCeiling','roomFloor','wallA','wallB','wallC','wallD'];for(const id of numeric){const raw=el(id).value;if(raw!==''&&(!Number.isFinite(Number(raw))||(id!=='roomFloor'&&Number(raw)<0))){alert('Check the numeric value in '+id+'.');return}}if(!el('roomLength').value||!el('roomWidth').value||!el('roomHeight').value){alert('Enter room length, width and height.');return}const old=readRoomRecords(),now=new Date().toISOString(),record={projectId,projectReference:p.reference,projectName:p.name,roomLength:Number(el('roomLength').value),roomWidth:Number(el('roomWidth').value),roomHeight:Number(el('roomHeight').value),roomCeiling:el('roomCeiling').value===''?'':Number(el('roomCeiling').value),roomFloor:el('roomFloor').value===''?'':Number(el('roomFloor').value),roomDate:el('roomDate').value||localDateInputValue(),roomNotes:el('roomNotes').value.trim(),walls:{},updatedAt:now,createdAt:old.find(x=>x.projectId===projectId)?.createdAt||now};for(const side of ['A','B','C','D'])record.walls[side]={length:el('wall'+side).value===''?'':Number(el('wall'+side).value),notes:el('wall'+side+'Notes').value.trim()};const idx=old.findIndex(x=>x.projectId===projectId);if(idx>=0)old[idx]=record;else old.push(record);if(writeRoomRecords(old))el('roomStatus').textContent='Room measurements saved for '+p.name+'. Records remain in this browser only.'});
+function refreshRoomManagement(){refreshRoomProjects(el('roomProject').value)}
 function quotePaymentsTotal(q){return Array.isArray(q.payments)?q.payments.reduce((sum,p)=>sum+Math.max(0,Number(p.amount)||0),0):0}
 function renderQuotationRegister(){
  const all=readQuoteHistory(),term=(el('quoteRegisterSearch').value||'').trim().toLowerCase(),from=el('quoteRegisterFrom').value?new Date(el('quoteRegisterFrom').value+'T00:00:00'):null,to=el('quoteRegisterTo').value?new Date(el('quoteRegisterTo').value+'T23:59:59'):null;
@@ -402,6 +437,8 @@ el('deleteQuoteHistory').addEventListener('click',()=>{const id=el('quoteHistory
 renderQuoteHistory();
 if(!el('pmStartDate').value)el('pmStartDate').value=localDateInputValue();
 refreshProjectManagement();
+if(!el('roomDate').value)el('roomDate').value=localDateInputValue();
+refreshRoomManagement();
 
 document.querySelectorAll('#quotationSection input').forEach(input=>input.addEventListener('input',updateQuotation));
 
