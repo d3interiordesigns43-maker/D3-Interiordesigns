@@ -221,8 +221,9 @@
 <div><label for="offcutWidth">Offcut width (mm)</label><input id="offcutWidth" type="number" min="50" max="3000" value="400"></div>
 <div><label for="offcutThickness">Board thickness (mm)</label><input id="offcutThickness" type="number" min="1" max="100" value="18"></div>
 <div><label for="offcutMaterial">Material / colour reference (optional)</label><input id="offcutMaterial" type="text" maxlength="80" placeholder="e.g. White oak / Greenlam code"></div>
+<div><label for="offcutRequiredMaterial">Project material / colour reference (optional filter)</label><input id="offcutRequiredMaterial" type="text" maxlength="80" placeholder="Enter exact board / decor code to match"></div>
 </div>
-<div class="btns"><button type="button" class="secondary" id="addOffcut">Add offcut to inventory</button><button type="button" class="secondary" id="planOffcutReuse">Find panels that fit</button><button type="button" class="secondary" id="confirmOffcutReuse" disabled>Confirm & reserve reuse plan</button><button type="button" class="danger" id="releaseOffcutReuse">Release reservations</button></div>
+<div class="btns"><button type="button" class="secondary" id="addOffcut">Add offcut to inventory</button><button type="button" class="secondary" id="planOffcutReuse">Find panels that fit</button><button type="button" class="secondary" id="confirmOffcutReuse" disabled>Confirm & reserve reuse plan</button><button type="button" class="danger" id="releaseOffcutReuse">Release this project's reservations</button></div>
 <div id="offcutReuseStatus" class="note" role="status">No reuse plan calculated yet.</div>
 <div class="table-wrap"><table><thead><tr><th>Offcut ID</th><th>Size</th><th>Thickness</th><th>Material reference</th><th>Status</th><th>Assigned panels</th><th>Action</th></tr></thead><tbody id="offcutInventoryRows"><tr><td colspan="7">No offcuts saved.</td></tr></tbody></table></div>
 <p class="note">Reuse allocation checks board thickness, available dimensions, kerf and the rotation setting. Confirm matching board material/finish yourself. The plan is a layout estimate, not a machine-ready cut program. Once confirmed, allocated panel quantities are excluded from the new-sheet estimate.</p></section>
@@ -339,14 +340,15 @@ function d3TryPackOffcut(offcut,panelItems,kerf,allowRotation){
  }
  return {placed,rows,remaining:panelItems.length-placed.length};
 }
+function d3NormaliseMaterial(v){return String(v||'').trim().toLowerCase().replace(/\s+/g,' ')}
 function d3BuildOffcutPlan(){
- const inv=d3ReadOffcuts().filter(o=>!(o.allocations||[]).length),pending=[];
+ const requiredMaterial=d3NormaliseMaterial(el('offcutRequiredMaterial').value),allAvailable=d3ReadOffcuts().filter(o=>!(o.allocations||[]).length),inv=allAvailable.filter(o=>!requiredMaterial||d3NormaliseMaterial(o.material)===requiredMaterial),pending=[];
  parts.forEach((p,pi)=>{const qty=Math.max(0,Number(p.qty)||0),key=d3PanelKey(p);for(let n=1;n<=qty;n++)pending.push({panelKey:key,panelIndex:pi,copy:n,panelName:p.name,L:Number(p.L),W:Number(p.W),T:Number(p.T),grain:p.grain||'length'})});
  const K=Math.max(0,Number(el('kerf').value)||0),rot=!!el('allowSheetRotation').checked,used=[];
  for(const o of inv){const pack=d3TryPackOffcut(o,pending,K,rot);if(pack.placed.length){const allocations=pack.placed.map(p=>({projectKey:d3ProjectKey(),panelKey:p.panelKey,copy:p.copy,panelName:p.panelName,qty:1,x:p.x,y:p.y,length:p.placedL,width:p.placedW,rotated:p.rotated}));used.push({offcutId:o.id,allocations,placed:pack.placed,remaining:pack.remaining}) ;for(const p of pack.placed){const i=pending.findIndex(x=>x.panelKey===p.panelKey&&x.copy===p.copy);if(i>=0)pending.splice(i,1)}}}
  d3OffcutDraft={used,projectKey:d3ProjectKey(),unmatched:pending.length};el('confirmOffcutReuse').disabled=!used.length;
  const total=used.reduce((n,x)=>n+x.allocations.length,0),details=used.map(x=>{const o=inv.find(z=>z.id===x.offcutId);return '<li><strong>'+x.offcutId+'</strong> ('+o.length+' × '+o.width+' mm): '+x.allocations.map(a=>a.panelName+' #'+a.copy+' — '+a.length+' × '+a.width+' mm').join('; ')+'</li>'}).join('');
- el('offcutReuseStatus').innerHTML=total?'<strong>Reuse plan: '+total+' panel(s) fit in '+used.length+' offcut(s).</strong><ul>'+details+'</ul>'+pending.length+' panel copy/copies remain for new-sheet optimisation. Check the material reference before confirming.':'No compatible panels fit the available offcuts. Check thickness, dimensions and rotation settings.';
+ el('offcutReuseStatus').innerHTML=total?'<strong>Reuse plan: '+total+' panel(s) fit in '+used.length+' offcut(s).</strong><ul>'+details+'</ul>'+pending.length+' panel copy/copies remain for new-sheet optimisation.'+(requiredMaterial?' Exact material reference filter: '+requiredMaterial+'.':' Material reference not filtered; physically verify every board before confirming.'):'No compatible panels fit the available offcuts. '+(requiredMaterial?'No available offcut has the exact material reference "'+requiredMaterial+'". ':'')+'Check thickness, dimensions and rotation settings.';
  return d3OffcutDraft;
 }
 el('addOffcut')?.addEventListener('click',()=>{
@@ -363,7 +365,7 @@ el('confirmOffcutReuse')?.addEventListener('click',()=>{
  for(const use of d3OffcutDraft.used){const o=inv.find(x=>x.id===use.offcutId);if(o&&!o.allocations.length)o.allocations=use.allocations}
  if(d3WriteOffcuts(inv)){el('offcutReuseStatus').textContent='Reuse plan confirmed. Allocated panel copies will be excluded from the new-sheet cutting estimate. Recalculate the cutting layout.';d3OffcutDraft=null;el('confirmOffcutReuse').disabled=true;d3RenderOffcuts()}
 });
-el('releaseOffcutReuse')?.addEventListener('click',()=>{if(!confirm('Release all reserved offcut allocations? This returns every reserved offcut to Available status.'))return;const inv=d3ReadOffcuts();inv.forEach(o=>o.allocations=[]);if(d3WriteOffcuts(inv)){el('offcutReuseStatus').textContent='All reservations released.';d3OffcutDraft=null;el('confirmOffcutReuse').disabled=true;d3RenderOffcuts()}});
+el('releaseOffcutReuse')?.addEventListener('click',()=>{const projectKey=d3ProjectKey(),inv=d3ReadOffcuts(),count=inv.reduce((n,o)=>n+(o.allocations||[]).filter(a=>a.projectKey===projectKey).length,0);if(!count){el('offcutReuseStatus').textContent='No reservations exist for the current project.';return}if(!confirm('Release '+count+' reservation(s) for this project only? Other projects reservations will remain untouched.'))return;inv.forEach(o=>{o.allocations=(o.allocations||[]).filter(a=>a.projectKey!==projectKey)});if(d3WriteOffcuts(inv)){el('offcutReuseStatus').textContent='Current project reservations released. Other project reservations were kept.';d3OffcutDraft=null;el('confirmOffcutReuse').disabled=true;d3RenderOffcuts()}});
 el('offcutInventoryRows')?.addEventListener('click',e=>{const b=e.target.closest('[data-offcut-delete]');if(!b)return;const id=b.getAttribute('data-offcut-delete'),inv=d3ReadOffcuts(),o=inv.find(x=>x.id===id);if(!o||o.allocations.length)return;if(!confirm('Delete offcut '+id+' from inventory?'))return;if(d3WriteOffcuts(inv.filter(x=>x.id!==id)))d3RenderOffcuts()});
 d3RenderOffcuts();
 
