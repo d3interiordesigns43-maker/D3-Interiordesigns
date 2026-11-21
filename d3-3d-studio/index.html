@@ -251,7 +251,8 @@
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 const el=id=>document.getElementById(id),host=el('canvas'),scene=new THREE.Scene();scene.background=new THREE.Color('#111821');const camera=new THREE.PerspectiveCamera(45,host.clientWidth/host.clientHeight,1,15000);camera.position.set(1600,1300,1800);const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(host.clientWidth,host.clientHeight);host.appendChild(renderer.domElement);scene.add(new THREE.HemisphereLight(0xffffff,0x526070,2));const light=new THREE.DirectionalLight(0xffffff,2.2);light.position.set(1200,1800,1200);scene.add(light);const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;const floorGrid=new THREE.GridHelper(3000,30,0x52606c,0x293744);scene.add(floorGrid);const assembly=new THREE.Group();scene.add(assembly);const roomSceneGroup=new THREE.Group();scene.add(roomSceneGroup);let roomSceneActive=false;const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();let parts=[],meshes=[],markers=[],hardwarePreviewObjects={hinge:[],minifix:[],runner:[],handle:[]},selected=-1,catalogueEntries=[],cataloguePreview=null,catalogueEditingIndex=-1,pendingCataloguePdf=null;
-function panelScheduleKey(name){return String(name||'').trim().toLowerCase().replace(/\\s+/g,' ')}\nfunction part(name,kind,L,W,T,x,y,z,sx,sy,sz,band='4 edges'){return {name,kind,scheduleKey:panelScheduleKey(name),partId:'D3PART-'+panelScheduleKey(name).replace(/[^a-z0-9]+/g,'-'),L,W,T,x,y,z,sx,sy,sz,band,edges:band==='None'?'':band==='Long edges'?'TB':'TBLR',edgeColor:el('ebColor').value,finishColor:(kind==='front'||kind==='door'?el('frontFinish').value:kind==='back'?'#b5b5b5':el('finish').value),grain:'length',qty:1}}
+function panelScheduleKey(name){return String(name||'').trim().toLowerCase().replace(/\\s+/g,' ')}
+function part(name,kind,L,W,T,x,y,z,sx,sy,sz,band='4 edges'){return {name,kind,scheduleKey:panelScheduleKey(name),partId:'D3PART-'+panelScheduleKey(name).replace(/[^a-z0-9]+/g,'-'),L,W,T,x,y,z,sx,sy,sz,band,edges:band==='None'?'':band==='Long edges'?'TB':'TBLR',edgeColor:el('ebColor').value,finishColor:(kind==='front'||kind==='door'?el('frontFinish').value:kind==='back'?'#b5b5b5':el('finish').value),grain:'length',qty:1}}
 function addMesh(p,i,color){const m=new THREE.Mesh(new THREE.BoxGeometry(p.sx,p.sy,p.sz),new THREE.MeshStandardMaterial({color:p.finishColor||color,roughness:.65}));m.position.set(p.x,p.y,p.z);m.userData.index=i;m.castShadow=true;m.receiveShadow=true;assembly.add(m);meshes.push(m)}
 function guideSphere(x,y,z,r,color,index){const m=new THREE.Mesh(new THREE.SphereGeometry(r,12,10),new THREE.MeshStandardMaterial({color,roughness:.4}));m.position.set(x,y,z);m.userData.index=index;assembly.add(m);markers.push(m)}
 function build(){assembly.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose()}});assembly.clear();meshes=[];markers=[];hardwarePreviewObjects={hinge:[],minifix:[],runner:[],handle:[]};parts=[];const W=+el('w').value,H=+el('h').value,D=+el('d').value,T=+el('t').value,B=+el('b').value,nS=Math.max(0,Math.min(12,+el('shelves').value||0)),nD=Math.max(0,Math.min(8,+el('drawers').value||0)),nDoors=+el('doors').value,clr=el('finish').value,front=el('frontFinish').value,hingeN=+el('hinges').value,band=el('ebColor').value;if(!Number.isFinite(+el('frontGap').value)||+el('frontGap').value<1||+el('frontGap').value>8||[W,H,D,T,B].some(v=>!Number.isFinite(v)||v<=0)||W<=2*T||H<=2*T||D<=B||T>=Math.min(W,H)/3||B>=D/2||!Number.isInteger(nS)||!Number.isInteger(nD)||nS>12||nD>8||nDoors<0||nDoors>4){alert('Please check cabinet dimensions and component counts. Board thickness, back thickness, shelves, drawers and doors must be within sensible limits.');return}
@@ -482,7 +483,6 @@ el('printCutLayout')?.addEventListener('click',()=>{
  const html='<!doctype html><html><head><meta charset="utf-8"><title>D3 Interior Designs · Sheet Cutting Layout</title><style>@page{size:A4 portrait;margin:12mm}body{font:11px Arial,sans-serif;color:#18212a;margin:0}h1{font-size:18px;margin:0 0 4mm}h2{font-size:14px;margin:8mm 0 3mm}.meta{font-size:10px;color:#45525a;margin:2mm 0 5mm}#sheets{display:grid;gap:8mm}#sheets>div{break-inside:avoid;page-break-inside:avoid;border:1px solid #bbb;padding:5mm;border-radius:3mm}#sheets svg{display:block;width:100%;height:auto;max-height:245mm}table{width:100%;border-collapse:collapse;font-size:8px}th,td{border:1px solid #999;padding:4px;text-align:left;vertical-align:top}th{background:#eee}button{padding:8px 14px;margin:12px 0}@media print{button{display:none}#sheets>div{break-inside:avoid;page-break-inside:avoid}}</style></head><body><h1>D3 Interior Designs · Sheet Cutting Layout</h1>'+summary+'<p class="meta">Dimensions in millimetres · Red: horizontal strip cuts · Blue: vertical part cuts · Grey: recoverable offcuts. Sequence lists all strip cuts first, then vertical cuts by strip. Verify stock, grain and machine settings before production.</p><main id="sheets">'+preview.innerHTML+'</main>'+cutTable+'<button type="button" onclick="window.print()">Print / Save as PDF</button></body></html>';
  w.document.open();w.document.write(html);w.document.close();w.focus();
 });
-<script>
 (function(){
  const byId=id=>document.getElementById(id);
  const escHtml=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -514,10 +514,7 @@ el('printCutLayout')?.addEventListener('click',()=>{
   printReport('D3 Interior Designs — Edge-band Schedule','Edge-band length grouped by selected colour · lengths in metres',['Colour / finish','Brand','SKU','Thk mm','Width mm','Panel types','Panel pieces','Required metres','Rate / metre','Estimated amount'],rows,'Lengths are calculated from selected T/B/L/R edges and panel quantities. Add wastage and verify edge-band thickness, width, colour match and supplier product code.');
  });
 })();
-</script>
-</body></html>');
- w.document.close();w.focus();setTimeout(()=>w.print(),300);
-});
+
 el('useOptimisedBoardCount')?.addEventListener('click',()=>{
  const result=optimiseSheets();
  if(!result)return;
@@ -1247,7 +1244,6 @@ document.getElementById('applyHardwareAssist')?.addEventListener('click',()=>{
  document.getElementById('accessoryModel')?.focus();
 });
 updateHardwareAssistGuide();
-</script><script>
 const EDGE_BAND_CATALOGUE_KEY='d3-edge-band-catalogue-v1';
 function readEdgeBandCatalogue(){try{const a=JSON.parse(localStorage.getItem(EDGE_BAND_CATALOGUE_KEY)||'[]');return Array.isArray(a)?a.filter(x=>x&&x.id):[]}catch(e){return[]}}
 function writeEdgeBandCatalogue(a){try{localStorage.setItem(EDGE_BAND_CATALOGUE_KEY,JSON.stringify(a));return true}catch(e){alert('Could not save edge-band catalogue in this browser.');return false}}
