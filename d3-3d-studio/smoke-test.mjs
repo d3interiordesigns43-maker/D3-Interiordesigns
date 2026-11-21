@@ -48,8 +48,27 @@ try {
   await page.waitForFunction(() => document.querySelector('#sheetPreview')?.children.length > 0, null, { timeout: 15000 });
   assert.ok((await page.locator('#optimiseResult').innerText()).trim().length > 0);
 
+  // Mach3 simultaneous 4-axis setup: profile persistence and rotary math preview.
+  assert.ok(await page.locator('#mach3FourAxisSetup').count(), 'Mach3 setup section should render');
+  await page.locator('#mach3StepsPerDegree').fill('10');
+  await page.locator('#mach3RotaryDiameter').fill('100');
+  await page.locator('#mach3TargetAngle').fill('90');
+  await page.locator('#mach3CalculateRotary').click();
+  assert.match(await page.locator('#mach3RotaryCalculation').innerText(), /900\.000 motor pulses/);
+  assert.match(await page.locator('#mach3RotaryCalculation').innerText(), /78\.540 mm/);
+  await page.locator('#mach3RotaryZero').selectOption('top');
+  await page.locator('#mach3Direction').selectOption('positive');
+  await page.locator('#saveMach3Profile').click();
+  assert.match(await page.locator('#mach3ProfileStatus').innerText(), /saved in this browser/i);
+  assert.match(await page.evaluate(() => localStorage.getItem('d3-mach3-four-axis-profile-v1')), /simultaneous-4-axis/);
+  await page.reload({ waitUntil: 'networkidle' });
+  assert.equal(await page.locator('#mach3StepsPerDegree').inputValue(), '10');
+  assert.equal(await page.locator('#mach3RotaryDiameter').inputValue(), '100');
+  await page.locator('#clearMach3Profile').click();
+  assert.equal(await page.evaluate(() => localStorage.getItem('d3-mach3-four-axis-profile-v1')), null);
+
   assert.deepEqual(pageErrors, [], 'app should not throw uncaught browser errors');
-  console.log('D3 Studio browser smoke test passed: 3D canvas, cabinet build, panel schedule, 2D/hardware drawings and cutting layout.');
+  console.log('D3 Studio browser smoke test passed: 3D canvas, cabinet build, panel schedule, 2D/hardware drawings, cutting layout and Mach3 rotary setup.');
 } finally {
   if (browser) await browser.close();
   await new Promise(resolveClose => server.close(resolveClose));
