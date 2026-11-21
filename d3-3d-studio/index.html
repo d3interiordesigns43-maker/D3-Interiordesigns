@@ -37,7 +37,7 @@
 <div><label>Filter brand</label><select id="catalogueBrandFilter"><option value="">All brands</option></select></div>
 <div><label>Filter category</label><select id="catalogueCategoryFilter"><option value="">All categories</option></select></div>
 <div><label>Sort products</label><select id="catalogueSort"><option value="brand">Brand A–Z</option><option value="name">Model A–Z</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option></select></div>
-</div><div id="catalogueFilterCount" class="note" style="margin-bottom:8px">Showing all catalogue items.</div><div id="catalogueLibrary" class="note">No catalogue items saved yet.</div><div id="catalogueCostSummary" class="note" style="margin-top:10px"><strong>Hardware project cost (INR)</strong><p id="catalogueCostTotal">Catalogue total: ₹0.00</p><div id="catalogueBrandCosts"></div><p class="note">Calculated as saved quantity × manually entered unit price. Excludes VAT, delivery, discounts and installation. Prices are estimates until confirmed with supplier.</p></div><section id="quotationSection"><h3>Customer quotation · INR ₹</h3><p class="note">Board and mica are priced per full sheet, not per square metre. Enter sheet quantities; use the cutting optimiser to guide the board sheet count.</p><div class="fields">
+</div><div id="catalogueFilterCount" class="note" style="margin-bottom:8px">Showing all catalogue items.</div><div id="catalogueLibrary" class="note">No catalogue items saved yet.</div><div id="catalogueCostSummary" class="note" style="margin-top:10px"><strong>Hardware project cost (INR)</strong><p id="catalogueCostTotal">Catalogue total: ₹0.00</p><div id="catalogueBrandCosts"></div><p class="note">Calculated as saved quantity × manually entered unit price. Excludes VAT, delivery, discounts and installation. Prices are estimates until confirmed with supplier.</p></div><section id="dataBackupSection" style="margin:12px 0;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel)"><h3>D3 project data · Backup &amp; restore</h3><p class="note">Export your locally saved projects, room plans, measurements, customer records, quotations, offcut stock, edge-band catalogue and Mach3 setup as one JSON backup. Keep a copy outside this browser. Restore replaces these D3 Studio records on this device.</p><div class="btns"><button type="button" id="exportD3Backup">Download full backup</button><button type="button" class="secondary" id="chooseD3Restore">Restore from backup</button><input id="d3RestoreFile" type="file" accept="application/json,.json" hidden></div><p id="d3BackupStatus" class="note" role="status" aria-live="polite">No backup created yet.</p></section><section id="quotationSection"><h3>Customer quotation · INR ₹</h3><p class="note">Board and mica are priced per full sheet, not per square metre. Enter sheet quantities; use the cutting optimiser to guide the board sheet count.</p><div class="fields">
 <div><label>Customer name</label><input id="quoteCustomer" type="text" maxlength="120" placeholder="Customer / company name"></div>
 <div><label>Customer phone / email</label><input id="quoteContact" type="text" maxlength="120" placeholder="Phone or email"></div>
 <div><label>Project / site address</label><input id="quoteSite" type="text" maxlength="240" placeholder="Project location"></div>
@@ -1274,6 +1274,38 @@ el('edgeCatRows')?.addEventListener('click',e=>{const b=e.target.closest('[data-
 el('exportEdgeCat')?.addEventListener('click',()=>{const items=readEdgeBandCatalogue();if(!items.length){alert('Add catalogue products first.');return}const rows=[['Brand','SKU','Colour','Thickness mm','Width mm','Price INR/metre'],...items.map(x=>[x.brand,x.sku,x.colour,x.thickness,x.width,x.rate])],csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff',csv],{type:'text/csv;charset=utf-8'}));a.download='D3-edge-band-catalogue.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
 renderEdgeBandCatalogue();
 
+// D3 Studio portable backup: only the app's documented local data keys are included.
+(()=>{
+ const keys=['d3-3d-studio-quotation-history-v1','d3_customer_profiles_v1','d3_project_workflow_v1','d3_room_measurements_v1','d3_interactive_room_plans_v1','d3-offcut-inventory-v1','d3-edge-band-catalogue-v1','d3-mach3-four-axis-profile-v1'];
+ const status=document.getElementById('d3BackupStatus'),file=document.getElementById('d3RestoreFile');
+ const exportButton=document.getElementById('exportD3Backup'),chooseButton=document.getElementById('chooseD3Restore');
+ if(exportButton)exportButton.addEventListener('click',()=>{
+  try{
+   const data={format:'D3-3D-STUDIO-BACKUP',version:1,createdAt:new Date().toISOString(),records:{}};
+   keys.forEach(k=>{data.records[k]=localStorage.getItem(k)});
+   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+   const url=URL.createObjectURL(blob),a=document.createElement('a');
+   a.href=url;a.download='D3-Studio-backup-'+new Date().toISOString().slice(0,10)+'.json';
+   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+   status.textContent='Backup downloaded. Store this JSON file safely; it contains your locally saved D3 Studio business data.';
+  }catch(e){status.textContent='Backup failed: '+e.message}
+ });
+ if(chooseButton&&file)chooseButton.addEventListener('click',()=>file.click());
+ if(file)file.addEventListener('change',async()=>{
+  const selected=file.files&&file.files[0];if(!selected)return;
+  try{
+   if(selected.size>10*1024*1024)throw new Error('Backup file is larger than 10 MB.');
+   const data=JSON.parse(await selected.text());
+   if(!data||data.format!=='D3-3D-STUDIO-BACKUP'||data.version!==1||!data.records||typeof data.records!=='object'||Array.isArray(data.records))throw new Error('This is not a supported D3 Studio backup file.');
+   const supplied=Object.keys(data.records);
+   if(!supplied.length||supplied.some(k=>!keys.includes(k))||supplied.some(k=>data.records[k]!==null&&typeof data.records[k]!=='string'))throw new Error('Backup contains unknown or invalid data records. Nothing was changed.');
+   if(!confirm('Restore '+supplied.length+' D3 Studio data records? Existing records for these categories on this device will be replaced.'))return;
+   supplied.forEach(k=>{const value=data.records[k];if(value===null)localStorage.removeItem(k);else localStorage.setItem(k,value)});
+   status.textContent='Restore complete for '+supplied.length+' data categories. Reload D3 Studio to refresh all screens.';
+  }catch(e){status.textContent='Restore failed: '+e.message}
+  finally{file.value=''}
+ });
+})();
 // D3 Mach3 simultaneous 4-axis setup profile (configuration only; no G-code output)
 (()=>{
  const key='d3-mach3-four-axis-profile-v1';
