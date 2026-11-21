@@ -85,6 +85,7 @@
 <div><label>Element depth (mm)</label><input id="planItemDepth" type="number" min="30" value="600"></div><div><label>Furniture height (mm)</label><input id="planItemHeight" type="number" min="50" value="720"></div>
 </div>
 <div class="btns"><button type="button" id="planAdd">Add element</button><button type="button" class="secondary" id="planRotate">Rotate selected 90°</button><button type="button" class="secondary" id="planDelete">Delete selected</button><button type="button" class="secondary" id="planSave">Save plan</button></div>
+<div class="btns"><button type="button" id="plan3DView">Render 3D Room</button><span class="note">Preview the room, walls and plan-positioned furniture in the 3D viewer.</span></div>
 <div id="planStatus" class="note" style="margin:8px 0">Save room dimensions above, then select a project.</div>
 <div style="background:#0b1117;border:1px solid var(--line);border-radius:8px;overflow:hidden"><svg id="roomPlanSvg" viewBox="0 0 760 540" role="img" aria-label="Interactive room floor plan" style="width:100%;height:auto;display:block;touch-action:none"><rect width="760" height="540" fill="#0b1117"/><text x="380" y="270" fill="#9caebc" text-anchor="middle">Select a project and enter room dimensions</text></svg></div>
 <div id="planLegend" class="note" style="margin-top:8px">Drag elements to reposition. Select an item to highlight it.</div>
@@ -137,7 +138,7 @@
 </aside><div class="viewer"><div id="canvas"></div></div></main>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-const el=id=>document.getElementById(id),host=el('canvas'),scene=new THREE.Scene();scene.background=new THREE.Color('#111821');const camera=new THREE.PerspectiveCamera(45,host.clientWidth/host.clientHeight,1,15000);camera.position.set(1600,1300,1800);const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(host.clientWidth,host.clientHeight);host.appendChild(renderer.domElement);scene.add(new THREE.HemisphereLight(0xffffff,0x526070,2));const light=new THREE.DirectionalLight(0xffffff,2.2);light.position.set(1200,1800,1200);scene.add(light);const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;scene.add(new THREE.GridHelper(3000,30,0x52606c,0x293744));const assembly=new THREE.Group();scene.add(assembly);const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();let parts=[],meshes=[],markers=[],selected=-1,catalogueEntries=[],cataloguePreview=null,catalogueEditingIndex=-1,pendingCataloguePdf=null;
+const el=id=>document.getElementById(id),host=el('canvas'),scene=new THREE.Scene();scene.background=new THREE.Color('#111821');const camera=new THREE.PerspectiveCamera(45,host.clientWidth/host.clientHeight,1,15000);camera.position.set(1600,1300,1800);const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(host.clientWidth,host.clientHeight);host.appendChild(renderer.domElement);scene.add(new THREE.HemisphereLight(0xffffff,0x526070,2));const light=new THREE.DirectionalLight(0xffffff,2.2);light.position.set(1200,1800,1200);scene.add(light);const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;const floorGrid=new THREE.GridHelper(3000,30,0x52606c,0x293744);scene.add(floorGrid);const assembly=new THREE.Group();scene.add(assembly);const roomSceneGroup=new THREE.Group();scene.add(roomSceneGroup);let roomSceneActive=false;const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();let parts=[],meshes=[],markers=[],selected=-1,catalogueEntries=[],cataloguePreview=null,catalogueEditingIndex=-1,pendingCataloguePdf=null;
 function part(name,kind,L,W,T,x,y,z,sx,sy,sz,band='4 edges'){return {name,kind,L,W,T,x,y,z,sx,sy,sz,band,edges:band==='None'?'':band==='Long edges'?'TB':'TBLR',edgeColor:el('ebColor').value,finishColor:(kind==='front'||kind==='door'?el('frontFinish').value:kind==='back'?'#b5b5b5':el('finish').value),qty:1}}
 function addMesh(p,i,color){const m=new THREE.Mesh(new THREE.BoxGeometry(p.sx,p.sy,p.sz),new THREE.MeshStandardMaterial({color:p.finishColor||color,roughness:.65}));m.position.set(p.x,p.y,p.z);m.userData.index=i;m.castShadow=true;m.receiveShadow=true;assembly.add(m);meshes.push(m)}
 function guideSphere(x,y,z,r,color,index){const m=new THREE.Mesh(new THREE.SphereGeometry(r,12,10),new THREE.MeshStandardMaterial({color,roughness:.4}));m.position.set(x,y,z);m.userData.index=index;assembly.add(m);markers.push(m)}
@@ -413,6 +414,47 @@ function readPlans(){try{const v=JSON.parse(localStorage.getItem(PLAN_KEY)||'{}'
 function plannerDimensions(){return {w:Math.max(1,Number(el('roomLength').value)||4000),h:Math.max(1,Number(el('roomWidth').value)||3200)}}
 function refreshPlannerProjects(selected=''){const ps=readProjects();el('planProject').innerHTML='<option value="">Select project</option>'+ps.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.reference||'')+' · '+esc(p.name)+'</option>').join('');el('planProject').value=selected}
 function planLoad(){const id=el('planProject').value,plans=readPlans(),saved=id?plans[id]:null,record=readRoomRecords().find(x=>x.projectId===id);if(record){el('roomLength').value=record.roomLength||'';el('roomWidth').value=record.roomWidth||'';el('roomHeight').value=record.roomHeight||'';el('roomCeiling').value=record.roomCeiling??'';el('roomFloor').value=record.roomFloor??'';el('roomDate').value=record.roomDate||'';el('roomNotes').value=record.roomNotes||'';for(const side of ['A','B','C','D']){el('wall'+side).value=record.walls?.[side]?.length??'';el('wall'+side+'Notes').value=record.walls?.[side]?.notes??''}}planItems=Array.isArray(saved)?saved.map(x=>({...x})):(Array.isArray(saved?.items)?saved.items.map(x=>({...x})):[]);planSelected='';drawRoomPlan();el('planStatus').textContent=id?(planItems.length+' saved plan elements loaded. '+(record?'Room dimensions loaded from site measurement.':'Add room measurements above to scale the plan.')):'Select a project to start.'}
+function renderRoomScene(){
+ const length=Number(el('roomLength').value)||4000,width=Number(el('roomWidth').value)||3200,height=Number(el('roomHeight').value)||2700,wall=100;
+ if(length<500||width<500||height<500||length>20000||width>20000||height>6000){alert('Check room dimensions. Use mm: length/width 500–20000 and height 500–6000.');return}
+ roomSceneGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose()}});
+ roomSceneGroup.clear();
+ const mat=(color,roughness=.8)=>new THREE.MeshStandardMaterial({color,roughness});
+ const addBox=(w,h,d,x,y,z,material)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;roomSceneGroup.add(m);return m};
+ const floorMat=mat('#aeb7bd'),wallMat=mat('#e5e2dc'),trimMat=mat('#8a969d'),doorMat=mat('#bd9568'),windowMat=mat('#76b9c9'),socketMat=mat('#e3c75d'),plumbMat=mat('#69b58a');
+ addBox(length,24,width,0,-12,0,floorMat);
+ addBox(length,height,wall,0,height/2,-width/2-wall/2,wallMat);
+ addBox(length,height,wall,0,height/2,width/2+wall/2,wallMat);
+ addBox(wall,height,width,-length/2-wall/2,height/2,0,wallMat);
+ addBox(wall,height,width,length/2+wall/2,height/2,0,wallMat);
+ addBox(length,35,wall+12,0,18,-width/2-wall/2,trimMat);
+ addBox(length,35,wall+12,0,18,width/2+wall/2,trimMat);
+ const furniture={kitchen:'#b88b50',wardrobe:'#9b7cba',tv:'#4c91b8',island:'#c27d72'};
+ planItems.forEach(item=>{
+  const x0=Number(item.x)||0,z0=Number(item.y)||0,w=Math.max(30,Number(item.w)||600),d=Math.max(30,Number(item.h)||450),rot=((Number(item.rotation)||0)%180)!==0;
+  const fw=rot?d:w,fd=rot?w:d,cx=-length/2+x0+w/2,cz=-width/2+z0+d/2;
+  if(['kitchen','wardrobe','tv','island'].includes(item.type)){
+   const fh=Math.max(50,Math.min(height,Number(item.height)||720));
+   const mesh=addBox(fw,fh,fd,cx,fh/2,cz,mat(furniture[item.type]||'#b88b50'));mesh.userData.planItemId=item.id;
+  }else{
+   const color=item.type==='door'?doorMat:item.type==='window'?windowMat:item.type==='socket'?socketMat:plumbMat;
+   const marker=addBox(fw,Math.max(12,wall*.18),fd,cx,Math.max(12,wall*.09),cz,color);marker.userData.planItemId=item.id;
+  }
+ });
+ const span=Math.max(length,width,height);
+ roomSceneActive=true;assembly.visible=false;floorGrid.visible=false;roomSceneGroup.visible=true;
+ controls.target.set(0,height*.38,0);camera.position.set(span*1.35,height*1.15,span*1.55);camera.near=1;camera.far=Math.max(15000,span*8);camera.updateProjectionMatrix();controls.update();
+ el('plan3DView').textContent='Back to Cabinet 3D';
+ el('planStatus').textContent='3D room preview rendered from the current 2D plan. Furniture positions and footprints follow the plan; door/window/electrical symbols are floor markers, not wall openings.';
+}
+function exitRoomScene(){
+ roomSceneActive=false;roomSceneGroup.visible=false;assembly.visible=true;floorGrid.visible=true;
+ const W=Number(el('w').value)||900,H=Number(el('h').value)||2100,D=Number(el('d').value)||550;
+ controls.target.set(W/2,H/2,D/2);camera.position.set(W*1.35,H*1.3,D*2.3);camera.near=1;camera.far=15000;camera.updateProjectionMatrix();controls.update();
+ el('plan3DView').textContent='Render 3D Room';
+}
+el('plan3DView').addEventListener('click',()=>{if(roomSceneActive){exitRoomScene();return}renderRoomScene()});
+
 function planSvgPoint(e){const svg=el('roomPlanSvg'),p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const q=p.matrixTransform(svg.getScreenCTM().inverse());return q}
 function drawRoomPlan(){
  const svg=el('roomPlanSvg'),d=plannerDimensions(),scale=Math.min(620/d.w,410/d.h),rw=d.w*scale,rh=d.h*scale,x=(760-rw)/2,y=(540-rh)/2;
