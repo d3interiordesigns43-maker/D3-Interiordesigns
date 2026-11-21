@@ -259,6 +259,10 @@
 <div><label for="mach3RotaryZero">A-axis zero reference</label><select id="mach3RotaryZero"><option value="unknown">Not confirmed</option><option value="top">Top of stock</option><option value="front">Front / operator side</option><option value="custom">Machine-specific custom zero</option></select></div>
 <div><label for="mach3Direction">A-axis positive direction</label><select id="mach3Direction"><option value="unknown">Not confirmed</option><option value="positive">Positive direction verified</option><option value="negative">Reverse direction verified</option></select></div>
 </div>
+<div><label for="mach3TargetAngle">Test angle for calculation (°)</label><input id="mach3TargetAngle" type="number" step="any" value="90"></div>
+</div>
+<div class="actions"><button id="mach3CalculateRotary" type="button" class="secondary">Calculate rotary movement (preview)</button></div>
+<p id="mach3RotaryCalculation" class="note" role="status">Enter a verified steps-per-degree value and stock diameter to calculate theoretical pulse count and surface travel. This is a setup check only.</p>
 <div class="actions"><button id="saveMach3Profile" type="button">Save CNC setup on this device</button><button id="clearMach3Profile" type="button" class="secondary">Clear saved setup</button></div>
 <p id="mach3ProfileStatus" class="note" role="status">CNC setup needs calibration details before any machine-code export can be validated.</p>
 <p class="note"><strong>Safety hold:</strong> Do not run generated code until steps/degree, A direction, zero, rotary diameter/centreline, travel limits, safe Z, tool offsets, and a machine-specific Mach3 postprocessor are checked on the actual machine.</p></section></aside><div class="viewer"><div id="canvas"></div></div></main>
@@ -1291,5 +1295,16 @@ renderEdgeBandCatalogue();
  });
  const clear=document.getElementById('clearMach3Profile');
  if(clear)clear.addEventListener('click',()=>{try{localStorage.removeItem(key);ids.forEach(id=>{const n=document.getElementById(id);if(n)n.value=id==='mach3RotaryZero'||id==='mach3Direction'?'unknown':''});status.textContent='Saved CNC setup cleared from this browser.'}catch(e){status.textContent='Could not clear the saved profile.'}});
+
+ const calc=document.getElementById('mach3CalculateRotary');
+ if(calc)calc.addEventListener('click',()=>{
+  const steps=Number(document.getElementById('mach3StepsPerDegree')?.value);
+  const diameter=Number(document.getElementById('mach3RotaryDiameter')?.value);
+  const angle=Number(document.getElementById('mach3TargetAngle')?.value);
+  const out=document.getElementById('mach3RotaryCalculation');
+  if(!(steps>0)||!(diameter>0)||!Number.isFinite(angle)){out.textContent='Enter positive steps/degree and workpiece diameter, plus a valid test angle.';return}
+  const pulses=steps*angle,travel=Math.PI*diameter*angle/360;
+  out.textContent='Theoretical preview only: '+angle.toFixed(3)+'° = '+pulses.toFixed(3)+' motor pulses; surface travel at Ø'+diameter.toFixed(2)+' mm = '+travel.toFixed(3)+' mm. Confirm Mach3 scaling, gearing, direction and actual stock diameter on the machine. No G-code generated.';
+ });
 })();
 </script></body></html>
