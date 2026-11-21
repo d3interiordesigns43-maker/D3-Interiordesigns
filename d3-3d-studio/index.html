@@ -1069,12 +1069,20 @@ function generateUnitPanelSchedule(){
  const doors=Math.max(0,Math.min(12,Number(c.doors??el('unitDoorCount').value)||0)),drawers=Math.max(0,Math.min(12,Number(c.drawers??el('unitDrawerCount').value)||0)),shelves=Math.max(0,Math.min(20,Number(c.shelves??el('unitShelfCount').value)||0));
  if(![W,H,D,T,B,gap].every(Number.isFinite)||W<=2*T||H<=2*T||D<=B||T<12||T>30||B<3||B>12||gap<1||gap>8){alert('Check unit dimensions, board thickness, back thickness and front gap.');return}
  const innerW=W-2*T,innerH=H-2*T,innerD=D-B,drawerZone=drawers?(doors?Math.min(innerH*.38,innerH-40):innerH):0,drawerCell=drawers?drawerZone/drawers:0,doorH=innerH-drawerZone-(drawers?gap:0)-2*gap;
- const rows=[],add=(name,qty,length,width,thickness,edges)=>{if(qty>0&&length>0&&width>0){const front=/^(Door|Drawer front)/.test(name);rows.push({id:'D3-'+String(rows.length+1).padStart(3,'0'),name,qty,length:Math.round(length),width:Math.round(width),thickness,edges,finish:front?el('frontFinish').value:el('finish').value,edge:el('ebColor').value,grain:'length'})}};
+ const rows=[],add=(name,qty,length,width,thickness,edges,finishOverride)=>{if(qty>0&&length>0&&width>0){const front=/^(Door|Drawer front)/.test(name);rows.push({id:'D3-'+String(rows.length+1).padStart(3,'0'),name,qty,length:Math.round(length),width:Math.round(width),thickness,edges,finish:finishOverride|| (front?el('frontFinish').value:el('finish').value),edge:el('ebColor').value,grain:'length'})}};
  add('Left side',1,H,D,T,'TBLR');add('Right side',1,H,D,T,'TBLR');
  add('Top',1,innerW,innerD,T,'TB');add('Bottom',1,innerW,innerD,T,'TB');
  add('Back panel',1,innerH,innerW,B,'None');
  for(let i=0;i<shelves;i++)add('Shelf '+(i+1),1,innerW,innerD,T,'TB');
- if(drawers){const drawerFrontH=Math.max(30,drawerCell-gap);for(let i=0;i<drawers;i++)add('Drawer front '+(i+1),1,drawerFrontH,W-2*gap,18,'TBLR')}
+ if(drawers){
+  const drawerFrontH=Math.max(30,drawerCell-gap),boxW=Math.max(50,innerW-25),boxD=Math.max(50,innerD-50),boxSideH=Math.max(50,drawerFrontH-50),bottomT=6;
+  for(let i=0;i<drawers;i++){
+   add('Drawer front '+(i+1),1,drawerFrontH,W-2*gap,18,'TBLR');
+   add('Drawer box side '+(i+1)+' (L/R)',2,boxD,boxSideH,T,'TBLR');
+   add('Drawer box back '+(i+1),1,boxW,boxSideH,T,'TBLR');
+   add('Drawer box bottom '+(i+1),1,boxD,boxW,bottomT,'None');
+  }
+ }
  if(doors&&doorH>60){const cell=(W-2*gap)/doors;for(let i=0;i<doors;i++)add('Door '+(i+1),1,doorH,cell-gap,18,'TBLR')}
  unitPanelSchedule=rows;renderUnitPanelSchedule();renderUnitHardwareSchedule();renderPanelHardwareAssignments();renderUnitConnectionMap();renderUnitHingeLayout();
 }
