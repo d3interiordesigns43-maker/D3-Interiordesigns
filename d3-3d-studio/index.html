@@ -380,13 +380,13 @@ function optimiseSheets(){
  return result;
 }
 el('exportCutLayout').addEventListener('click',()=>{
- const r=window.d3CuttingResult||optimiseSheets();if(!r)return;
+ const r=optimiseSheets();if(!r)return;
  const rows=[['Record','Sheet','Part','Length mm','Width mm','X mm','Y mm','Rotated','Cut sequence / type']];
  r.sheets.forEach((sh,si)=>sh.rows.forEach((row,ri)=>row.placements.forEach((p,pi)=>rows.push(['PART',si+1,p.name,p.L,p.W,Math.round(r.M+p.x),Math.round(r.M+p.y),p.rot?'Yes':'No','Strip '+(ri+1)+' · part '+(pi+1)]))));
  r.offcuts.forEach(o=>rows.push(['OFFCUT',o.sheet,o.kind,o.w,o.h,o.x,o.y,'No','Waste rectangle']));
  rows.push([],['SETTINGS','','Sheet length',r.SL,'Sheet width',r.SW,'Kerf',r.K,'Edge margin',r.M,'Rotation allowed',r.allowRotation?'Yes':'No']);
  const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
- const blob=new Blob(['\\ufeff',csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='D3-cutting-layout.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+ const blob=new Blob(['\ufeff',csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='D3-cutting-layout.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 });
 function updateHardwareDrawing(){
 const H=+el('h').value,D=+el('d').value,T=+el('t').value,hingeN=+el('hinges').value,cup=+el('cupDia').value,setback=+el('cupSetback').value,margin=+el('hingeMargin').value,cam=+el('camDia').value,offset=Math.min(+el('minifixOffset').value,H/3);
@@ -416,7 +416,7 @@ function catalogueDrillingSvg(index){
  const valid=coordinateFit&&depthIssues===0;
  const scale=Math.min(520/L,260/W),px=L*scale,py=W*scale,ox=90,oy=100,cx=ox+px/2,tableTop=390,svgHeight=tableTop+Math.max(1,points.length)*22+48;
  const csvEscape=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
- const drillingCsv=()=>{const header=['Hole ID','X mm','Y mm','Diameter mm','Depth mm','Type','Status','Board thickness mm','Reference length mm','Reference width mm','Datum','Manufacturer review'];const rows=points.map((p,i)=>['H'+(i+1),p.x,p.y,p.diameter,p.depth,p.type,holeStatus(p),boardThickness,L,W,x.holeDatum||'Not specified',x.review||'unverified']);return [header,...rows].map(row=>row.map(csvEscape).join(',')).join('\\r\\n')};
+ const drillingCsv=()=>{const header=['Hole ID','X mm','Y mm','Diameter mm','Depth mm','Type','Status','Board thickness mm','Reference length mm','Reference width mm','Datum','Manufacturer review'];const rows=points.map((p,i)=>['H'+(i+1),p.x,p.y,p.diameter,p.depth,p.type,holeStatus(p),boardThickness,L,W,x.holeDatum||'Not specified',x.review||'unverified']);return [header,...rows].map(row=>row.map(csvEscape).join(',')).join('\r\n')};
  const holes=valid?points.map((p,i)=>{const hx=ox+p.x*scale,hy=oy+p.y*scale,r=Math.max(3,p.diameter*scale/2),stroke=p.type==='Countersink'?'#b45309':p.type==='Counterbore'?'#7c3aed':p.type==='Blind'?'#0f766e':'#087b9a';return '<circle cx="'+hx+'" cy="'+hy+'" r="'+r+'" fill="none" stroke="'+stroke+'" stroke-width="2"/>'+(p.type==='Countersink'||p.type==='Counterbore'?'<circle cx="'+hx+'" cy="'+hy+'" r="'+Math.max(2,r*.55)+'" fill="none" stroke="'+stroke+'" stroke-width="1"/>':'')+'<path d="M '+(hx-5)+' '+hy+' h 10 M '+hx+' '+(hy-5)+' v 10" stroke="'+stroke+'" stroke-width="1"/><text x="'+(hx+7)+'" y="'+(hy-8)+'" font-size="10" fill="'+stroke+'">H'+(i+1)+'</text>'}).join(''):'';
  const rowsSvg=points.map((p,i)=>{const y=tableTop+24+i*22,status=holeStatus(p);return '<text x="32" y="'+y+'" font-size="12" fill="#222">H'+(i+1)+'</text><text x="95" y="'+y+'" font-size="12" fill="#222">'+p.x.toFixed(2)+'</text><text x="190" y="'+y+'" font-size="12" fill="#222">'+p.y.toFixed(2)+'</text><text x="285" y="'+y+'" font-size="12" fill="#222">'+p.diameter.toFixed(2)+'</text><text x="395" y="'+y+'" font-size="12" fill="#222">'+p.depth.toFixed(2)+'</text><text x="505" y="'+y+'" font-size="12" fill="#222">'+esc(p.type)+'</text><text x="610" y="'+y+'" font-size="10" fill="'+(status==='CHECK SOURCE'?'#9a5b00':'#b3261e')+'">'+status+'</text>'}).join('');
  const warning=coordError||(!points.length?'No valid hole pattern entered; no hole centres are drawn.':!coordinateFit?'One or more coordinates are outside the reference length/width, or hole dimensions are invalid.':depthIssues?'Review '+depthIssues+' hole depth/status warning(s) against board thickness '+boardThickness+' mm.':'Hole depths do not exceed the entered board thickness ('+boardThickness+' mm); verify every hole against the manufacturer drawing.');
