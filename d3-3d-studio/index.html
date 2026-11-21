@@ -357,7 +357,9 @@ el('addOffcut')?.addEventListener('click',()=>{
 });
 el('planOffcutReuse')?.addEventListener('click',()=>{if(!parts.length){el('offcutReuseStatus').textContent='Build the cabinet or load its panel schedule before matching offcuts.';return}d3BuildOffcutPlan()});
 el('confirmOffcutReuse')?.addEventListener('click',()=>{
- if(!d3OffcutDraft?.used?.length)return;const inv=d3ReadOffcuts();
+ if(!d3OffcutDraft?.used?.length)return;
+ if(!confirm('Before reserving, verify that every selected offcut matches the panel material, laminate / finish colour, grain direction and thickness. The app checks dimensions and thickness, but cannot verify the physical board finish. Continue with this reuse reservation?'))return;
+ const inv=d3ReadOffcuts();
  for(const use of d3OffcutDraft.used){const o=inv.find(x=>x.id===use.offcutId);if(o&&!o.allocations.length)o.allocations=use.allocations}
  if(d3WriteOffcuts(inv)){el('offcutReuseStatus').textContent='Reuse plan confirmed. Allocated panel copies will be excluded from the new-sheet cutting estimate. Recalculate the cutting layout.';d3OffcutDraft=null;el('confirmOffcutReuse').disabled=true;d3RenderOffcuts()}
 });
