@@ -128,7 +128,7 @@
 </div>
 <div class="btns"><button type="button" id="generateUnitPanels">Generate panel schedule</button><button type="button" class="secondary" id="exportUnitPanels">Export unit CSV</button></div>
 <div id="unitPanelSummary" class="note" style="margin:8px 0">Select a furniture unit and generate its schedule.</div>
-<div class="table-wrap"><table><thead><tr><th>Panel</th><th>Qty</th><th>Length</th><th>Width</th><th>Thk</th><th>Edge band (T/B/L/R)</th><th>Band length</th></tr></thead><tbody id="unitPanelRows"><tr><td colspan="7">No panel schedule generated.</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Panel ID / Name</th><th>Qty</th><th>Length</th><th>Width</th><th>Thk</th><th>Edge band (T/B/L/R)</th><th>Mica / finish</th><th>Edge colour</th><th>Grain direction</th><th>Band length</th></tr></thead><tbody id="unitPanelRows"><tr><td colspan="7">No panel schedule generated.</td></tr></tbody></table></div>
 <p class="note">Preliminary nominal sizes only. Door/drawer front clearances and back-groove construction are simplified. Verify joinery, grain direction, edge orientation, hardware clearances and actual board sizes before cutting.</p>
 </div><div class="btns"><button type="button" id="applyUnitConfiguration">Apply to selected unit</button><span id="unitConfigStatus" class="note">Select a furniture block to configure it.</span></div></div><div class="btns"><button type="button" id="plan3DView">Render 3D Room</button><span class="note">Preview the room, walls and plan-positioned furniture in the 3D viewer.</span></div>
 <div id="planStatus" class="note" style="margin:8px 0">Save room dimensions above, then select a project.</div>
@@ -767,13 +767,15 @@ if(hardwareQuickPreset)hardwareQuickPreset.addEventListener('change',()=>{
  const status=el('cataloguePdfStatus');if(status)status.textContent='Preset applied. Add exact manufacturer part number and verify source document.';
 });
 
-// Prototype 68 · selected-unit panel schedule
+// Prototype 69 · panel identification, finish, edge colour and grain direction
 let unitPanelSchedule=[];
 function unitPanelBandLength(p){const e=p.edges||'';return ((e.includes('T')||e.includes('B'))?2*p.width:0)+((e.includes('L')||e.includes('R'))?2*p.length:0)}
+function unitPanelColorOptions(selected){const colors=[['#c9a77b','Oak'],['#e6e0d2','White'],['#595b60','Graphite'],['#8c644b','Walnut'],['#111111','Black'],['#aeb7bd','Light Grey']];return colors.map(([v,n])=>'<option value="'+v+'" '+(selected===v?'selected':'')+'>'+n+'</option>').join('')}
+function unitPanelSelect(kind,p,index){if(kind==='grain'){const opts=[['length','Length direction'],['width','Width direction'],['none','No grain']];return '<select data-unit-index="'+index+'" data-unit-field="grain">'+opts.map(([v,n])=>'<option value="'+v+'" '+(p.grain===v?'selected':'')+'>'+n+'</option>').join('')+'</select>'}return '<select data-unit-index="'+index+'" data-unit-field="'+kind+'">'+unitPanelColorOptions(p[kind])+'</select>'}
 function renderUnitPanelSchedule(){
  const body=el('unitPanelRows'),summary=el('unitPanelSummary');
- if(!unitPanelSchedule.length){body.innerHTML='<tr><td colspan="7">No panel schedule generated.</td></tr>';summary.textContent='Select a furniture unit and generate its schedule.';return}
- body.innerHTML=unitPanelSchedule.map(p=>'<tr><td>'+esc(p.name)+'</td><td>'+p.qty+'</td><td>'+p.length+'</td><td>'+p.width+'</td><td>'+p.thickness+'</td><td>'+p.edges+'</td><td>'+((unitPanelBandLength(p)*p.qty)/1000).toFixed(2)+' m</td></tr>').join('');
+ if(!unitPanelSchedule.length){body.innerHTML='<tr><td colspan="10">No panel schedule generated.</td></tr>';summary.textContent='Select a furniture unit and generate its schedule.';return}
+ body.innerHTML=unitPanelSchedule.map((p,i)=>'<tr><td><strong>'+esc(p.id)+'</strong><br>'+esc(p.name)+'</td><td>'+p.qty+'</td><td>'+p.length+'</td><td>'+p.width+'</td><td>'+p.thickness+'</td><td>'+p.edges+'</td><td>'+unitPanelSelect('finish',p,i)+'</td><td>'+unitPanelSelect('edge',p,i)+'</td><td>'+unitPanelSelect('grain',p,i)+'</td><td>'+((unitPanelBandLength(p)*p.qty)/1000).toFixed(2)+' m</td></tr>').join('');
  const area=unitPanelSchedule.reduce((a,p)=>a+p.length*p.width*p.qty/1e6,0),band=unitPanelSchedule.reduce((a,p)=>a+unitPanelBandLength(p)*p.qty/1000,0);
  summary.textContent=unitPanelSchedule.length+' panel types · '+unitPanelSchedule.reduce((a,p)=>a+p.qty,0)+' total pieces · '+area.toFixed(2)+' m² nominal panel area · '+band.toFixed(2)+' m edge band';
 }
@@ -784,7 +786,7 @@ function generateUnitPanelSchedule(){
  const doors=Math.max(0,Math.min(12,Number(c.doors??el('unitDoorCount').value)||0)),drawers=Math.max(0,Math.min(12,Number(c.drawers??el('unitDrawerCount').value)||0)),shelves=Math.max(0,Math.min(20,Number(c.shelves??el('unitShelfCount').value)||0));
  if(![W,H,D,T,B,gap].every(Number.isFinite)||W<=2*T||H<=2*T||D<=B||T<12||T>30||B<3||B>12||gap<1||gap>8){alert('Check unit dimensions, board thickness, back thickness and front gap.');return}
  const innerW=W-2*T,innerH=H-2*T,innerD=D-B,drawerZone=drawers?(doors?Math.min(innerH*.38,innerH-40):innerH):0,drawerCell=drawers?drawerZone/drawers:0,doorH=innerH-drawerZone-(drawers?gap:0)-2*gap;
- const rows=[],add=(name,qty,length,width,thickness,edges)=>{if(qty>0&&length>0&&width>0)rows.push({name,qty,length:Math.round(length),width:Math.round(width),thickness,edges})};
+ const rows=[],add=(name,qty,length,width,thickness,edges)=>{if(qty>0&&length>0&&width>0){const front=/^(Door|Drawer front)/.test(name);rows.push({id:'D3-'+String(rows.length+1).padStart(3,'0'),name,qty,length:Math.round(length),width:Math.round(width),thickness,edges,finish:front?el('frontFinish').value:el('finish').value,edge:el('ebColor').value,grain:'length'})}};
  add('Left side',1,H,D,T,'TBLR');add('Right side',1,H,D,T,'TBLR');
  add('Top',1,innerW,innerD,T,'TB');add('Bottom',1,innerW,innerD,T,'TB');
  add('Back panel',1,innerH,innerW,B,'None');
@@ -796,8 +798,9 @@ function generateUnitPanelSchedule(){
 el('generateUnitPanels').addEventListener('click',generateUnitPanelSchedule);
 el('exportUnitPanels').addEventListener('click',()=>{
  if(!unitPanelSchedule.length){alert('Generate the panel schedule first.');return}
- const rows=[['Panel','Qty','Length mm','Width mm','Thickness mm','Edge band T/B/L/R','Edge band total m'],...unitPanelSchedule.map(p=>[p.name,p.qty,p.length,p.width,p.thickness,p.edges,(unitPanelBandLength(p)*p.qty/1000).toFixed(2)])];
+ const rows=[['Panel ID','Panel','Qty','Length mm','Width mm','Thickness mm','Edge band T/B/L/R','Mica / finish colour','Edge band colour','Grain direction','Edge band total m'],...unitPanelSchedule.map(p=>[p.id,p.name,p.qty,p.length,p.width,p.thickness,p.edges,p.finish,p.edge,p.grain,(unitPanelBandLength(p)*p.qty/1000).toFixed(2)])];
  const csv=rows.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n'),blob=new Blob(['\ufeff',csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');
  a.href=URL.createObjectURL(blob);a.download='D3-unit-panel-schedule.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 });
+el('unitPanelRows').addEventListener('change',e=>{const field=e.target.getAttribute('data-unit-field'),index=Number(e.target.getAttribute('data-unit-index'));if(!field||!Number.isInteger(index)||!unitPanelSchedule[index])return;unitPanelSchedule[index][field]=e.target.value});
 </script></body></html>
