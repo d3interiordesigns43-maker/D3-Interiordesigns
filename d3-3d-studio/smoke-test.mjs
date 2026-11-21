@@ -67,6 +67,36 @@ try {
   await page.locator('#clearMach3Profile').click();
   assert.equal(await page.evaluate(() => localStorage.getItem('d3-mach3-four-axis-profile-v1')), null);
 
+  // Full D3 Studio JSON backup and validated restore.
+  const backupKeys = ['d3_customer_profiles_v1', 'd3_project_workflow_v1'];
+  await page.evaluate(() => {
+    localStorage.setItem('d3_customer_profiles_v1', JSON.stringify([{ id: 'backup-test-customer', name: 'D3 Backup Test' }]));
+    localStorage.setItem('d3_project_workflow_v1', JSON.stringify([{ id: 'backup-test-project', name: 'Backup Test Project' }]));
+  });
+  const [backupDownload] = await Promise.all([
+    page.waitForEvent('download'),
+    page.locator('#exportD3Backup').click()
+  ]);
+  assert.match(backupDownload.suggestedFilename(), /^D3-Studio-backup-.*\.json$/);
+  const backupPath = await backupDownload.path();
+  const { readFile } = await import('node:fs/promises');
+  const backupJson = JSON.parse(await readFile(backupPath, 'utf8'));
+  assert.equal(backupJson.format, 'D3-3D-STUDIO-BACKUP');
+  assert.ok(backupJson.records['d3_project_workflow_v1']);
+  await page.evaluate(() => {
+    localStorage.removeItem('d3_customer_profiles_v1');
+    localStorage.removeItem('d3_project_workflow_v1');
+  });
+  page.once('dialog', dialog => dialog.accept());
+  await page.locator('#d3RestoreFile').setInputFiles({
+    name: 'D3-Studio-test-backup.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(backupJson))
+  });
+  await page.waitForFunction(() => localStorage.getItem('d3_project_workflow_v1') !== null);
+  assert.match(await page.locator('#d3BackupStatus').innerText(), /Restore complete/);
+  assert.match(await page.evaluate(() => localStorage.getItem('d3_customer_profiles_v1')), /D3 Backup Test/);
+
   assert.deepEqual(pageErrors, [], 'app should not throw uncaught browser errors');
   console.log('D3 Studio browser smoke test passed: 3D canvas, cabinet build, panel schedule, 2D/hardware drawings, cutting layout and Mach3 rotary setup.');
 } finally {
