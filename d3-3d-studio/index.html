@@ -129,7 +129,7 @@
 <div><label>Hinge brand</label><select id="unitHingeBrand"><option>Ebco</option><option>Blum</option><option>Hettich</option><option>Häfele</option><option>Generic</option></select></div>
 <div><label>Hinge type</label><select id="unitHingeType"><option>Soft-close full overlay</option><option>Soft-close half overlay</option><option>Soft-close inset</option><option>Standard full overlay</option><option>Glass door hinge</option></select></div>
 <div><label>Handle style</label><select id="unitHandleStyle"><option>Ebco bar handle</option><option>Ebco knob</option><option>Profile / Gola</option><option>Push-to-open</option><option>Handleless</option></select></div>
-<div><label>Drawer runner</label><select id="unitRunner"><option>Ebco soft-close</option><option>Blum soft-close</option><option>Hettich soft-close</option><option>Telescopic channel</option><option>None</option></select></div>
+<div><label>Drawer runner</label><select id="unitRunner"><option>Ebco soft-close</option><option>Blum soft-close</option><option>Hettich soft-close</option><option>Telescopic channel</option><option>None</option></select></div><div class="fields" style="margin-top:10px"><div><label>Drawer side clearance (mm, total)</label><input id="unitRunnerClearance" type="number" min="0" max="60" value="25"></div><div><label>Drawer depth allowance (mm)</label><input id="unitDrawerDepthAllowance" type="number" min="0" max="150" value="50"></div><div><label>Drawer box side height allowance (mm)</label><input id="unitDrawerHeightAllowance" type="number" min="0" max="200" value="50"></div></div><p class="note">Clearance settings are editable planning values. Confirm the selected runner manufacturer's installation specification before fabrication.</p>
 <div><label>Other Ebco accessory</label><select id="unitAccessory"><option>None</option><option>Lift-up fitting</option><option>Pull-out basket</option><option>Wardrobe lift</option><option>Clothes rail</option><option>Waste bin pull-out</option><option>Cutlery organiser</option><option>LED profile</option></select></div>
 </div><div style="margin-top:12px"><label>Unit front elevation preview</label><div style="background:#0b1117;border:1px solid var(--line);border-radius:8px;overflow:hidden"><svg id="unitElevationSvg" viewBox="0 0 760 360" role="img" aria-label="Selected cabinet front elevation" style="width:100%;height:auto;display:block"><text x="380" y="180" fill="#9caebc" text-anchor="middle">Select a furniture unit to preview its front elevation</text></svg></div><div id="unitElevationLegend" class="note" style="margin-top:6px">Conceptual front view · dimensions in millimetres</div>
 <div class="fields" style="margin-top:8px">
@@ -1066,6 +1066,7 @@ function generateUnitPanelSchedule(){
  const item=planItems.find(i=>i.id===planSelected);
  if(!item||!['kitchen','wardrobe','tv','island'].includes(item.type)){alert('Select a kitchen, wardrobe, TV or island unit first.');return}
  const W=Math.round(Number(item.w)||0),H=Math.round(Number(item.height)||720),D=Math.round(Number(item.h)||0),T=Number(el('unitBoardThk').value),B=Number(el('unitBackThk').value),gap=Number(el('unitFrontGap').value),c=item.configuration||{};
+ const runnerClearance=Math.max(0,Math.min(60,Number(el('unitRunnerClearance')?.value)||0)),drawerDepthAllowance=Math.max(0,Math.min(150,Number(el('unitDrawerDepthAllowance')?.value)||0)),drawerHeightAllowance=Math.max(0,Math.min(200,Number(el('unitDrawerHeightAllowance')?.value)||0));
  const doors=Math.max(0,Math.min(12,Number(c.doors??el('unitDoorCount').value)||0)),drawers=Math.max(0,Math.min(12,Number(c.drawers??el('unitDrawerCount').value)||0)),shelves=Math.max(0,Math.min(20,Number(c.shelves??el('unitShelfCount').value)||0));
  if(![W,H,D,T,B,gap].every(Number.isFinite)||W<=2*T||H<=2*T||D<=B||T<12||T>30||B<3||B>12||gap<1||gap>8){alert('Check unit dimensions, board thickness, back thickness and front gap.');return}
  const innerW=W-2*T,innerH=H-2*T,innerD=D-B,drawerZone=drawers?(doors?Math.min(innerH*.38,innerH-40):innerH):0,drawerCell=drawers?drawerZone/drawers:0,doorH=innerH-drawerZone-(drawers?gap:0)-2*gap;
@@ -1075,7 +1076,7 @@ function generateUnitPanelSchedule(){
  add('Back panel',1,innerH,innerW,B,'None');
  for(let i=0;i<shelves;i++)add('Shelf '+(i+1),1,innerW,innerD,T,'TB');
  if(drawers){
-  const drawerFrontH=Math.max(30,drawerCell-gap),boxW=Math.max(50,innerW-25),boxD=Math.max(50,innerD-50),boxSideH=Math.max(50,drawerFrontH-50),bottomT=6;
+  const drawerFrontH=Math.max(30,drawerCell-gap),boxW=Math.max(50,innerW-runnerClearance),boxD=Math.max(50,innerD-drawerDepthAllowance),boxSideH=Math.max(50,drawerFrontH-drawerHeightAllowance),bottomT=6;
   for(let i=0;i<drawers;i++){
    add('Drawer front '+(i+1),1,drawerFrontH,W-2*gap,18,'TBLR');
    add('Drawer box side '+(i+1)+' (L/R)',2,boxD,boxSideH,T,'TBLR');
