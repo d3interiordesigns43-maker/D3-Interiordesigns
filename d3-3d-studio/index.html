@@ -516,11 +516,11 @@ el('printCutLayout')?.addEventListener('click',()=>{
   win.document.write('<!doctype html><html><head><title>D3 Dimensioned Panel Sheets</title><style>body{font:14px Arial;margin:18px;color:#111}article{page-break-inside:avoid;border:1px solid #999;padding:12px;margin:0 0 14px}h2{font-size:18px;margin:4px 0}svg{width:100%;height:260px}.small{color:#555}@media print{button{display:none}article{page-break-inside:avoid}}</style></head><body><h1>D3 Interior Designs · Panel Dimension Sheets</h1><p>Generated from the editable panel schedule. Confirm dimensions, grain and edge assignments before production.</p>'+cards+'<button onclick="print()">Print / Save as PDF</button><!-- D3 cut-sequence & panel-label exporter -->
 <script>
 (()=>{const b=document.getElementById('exportCutSequenceD3');if(!b)return;b.addEventListener('click',()=>{const r=window.d3CuttingResult;if(!r||!r.sheets?.length){alert('Calculate the cutting layout first.');return}const rows=[['Sheet','Sequence','Stage','Cut length mm','Reference'],...(r.cutSequence||[]).map(c=>[c.sheet,c.sequence,c.stage,Math.round(c.length),c.reference]),[],['PANEL LABELS'],['Sheet','Panel','Copy','Length mm','Width mm','Rotation','Grain']];r.sheets.forEach((sh,si)=>sh.rows.forEach(row=>row.placements.forEach(p=>rows.push([si+1,p.name,p.copy,p.L,p.W,p.rot?'90 deg':'0 deg',p.grain||'length']))));const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\\r\\n'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\\ufeff',csv],{type:'text/csv;charset=utf-8'}));a.download='D3-cut-sequence-and-panel-labels.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});})();
-</script>
+<\/script>
 </body></html>');win.document.close();
  });document.body.appendChild(b);
 })();
-</script>
+<\/script>
 </body></html>';
  w.document.open();w.document.write(html);w.document.close();w.focus();
 });
