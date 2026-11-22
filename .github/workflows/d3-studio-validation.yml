@@ -1,0 +1,108 @@
+name: D3 Studio validation
+
+on:
+  push:
+    branches:
+      - d3-v1-working-release
+    paths:
+      - 'd3-3d-studio/**'
+      - '.github/workflows/d3-studio-validation.yml'
+  pull_request:
+    paths:
+      - 'd3-3d-studio/**'
+      - '.github/workflows/d3-studio-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate HTML structure
+        run: |
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          import re
+          import sys
+
+          path = Path("d3-3d-studio/index.html")
+          html = path.read_text(encoding="utf-8")
+
+          class Audit(HTMLParser):
+              def __init__(self):
+                  super().__init__(convert_charrefs=True)
+                  self.ids = []
+                  self.script_types = []
+              def handle_starttag(self, tag, attrs):
+                  attrs = dict(attrs)
+                  if "id" in attrs:
+                      self.ids.append(attrs["id"])
+                  if tag == "script":
+                      self.script_types.append(attrs.get("type", ""))
+
+          audit = Audit()
+          audit.feed(html)
+          duplicates = sorted({x for x in audit.ids if audit.ids.count(x) > 1})
+          if duplicates:
+              print("Duplicate HTML IDs:", ", ".join(duplicates))
+              sys.exit(1)
+          if audit.script_types.count("module") != 1:
+              print("Expected exactly one module script; found", audit.script_types.count("module"))
+              sys.exit(1)
+          if audit.script_types.count("importmap") != 1:
+              print("Expected exactly one import map; found", audit.script_types.count("importmap"))
+              sys.exit(1)
+          print(f"HTML audit passed: {len(audit.ids)} IDs, no duplicates, script structure verified.")
+          PY
+
+      - name: Check complete JavaScript module syntax
+        run: |
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          class ModuleExtractor(HTMLParser):
+              def __init__(self):
+                  super().__init__(convert_charrefs=False)
+                  self.in_module = False
+                  self.module_count = 0
+                  self.parts = []
+              def handle_starttag(self, tag, attrs):
+                  if tag == "script" and dict(attrs).get("type") == "module":
+                      self.in_module = True
+                      self.module_count += 1
+              def handle_data(self, data):
+                  if self.in_module:
+                      self.parts.append(data)
+              def handle_endtag(self, tag):
+                  if tag == "script" and self.in_module:
+                      self.in_module = False
+
+          parser = ModuleExtractor()
+          parser.feed(Path("d3-3d-studio/index.html").read_text(encoding="utf-8"))
+          if parser.module_count != 1:
+              raise SystemExit(f"Expected one module script, found {parser.module_count}")
+          Path("/tmp/d3-studio-module.mjs").write_text("".join(parser.parts), encoding="utf-8")
+          print("Extracted complete module script safely.")
+          PY
+          node --check /tmp/d3-studio-module.mjs
+
+      - name: Install browser test dependency
+        run: npm install --no-save playwright
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run D3 Studio browser smoke test
+        run: node d3-3d-studio/smoke-test.mjs
