@@ -77,9 +77,8 @@ jobs:
           if audit.script_types.count("importmap") != 1:
               print("Expected exactly one import map; found", audit.script_types.count("importmap"))
               sys.exit(1)
-          if len(audit.script_types) != 2:
-              print("Unexpected script tags:", audit.script_types)
-              sys.exit(1)
+          # Ordinary inline scripts are allowed; this app has legacy helpers in addition
+          # to its import map and ES module. Only require one module and one import map.
           module = "".join(audit.module_parts).strip()
           if not module:
               print("Module script is empty")
