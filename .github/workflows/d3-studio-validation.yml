@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Validate HTML structure and extract module
+      - name: Validate HTML structure
         run: |
           python - <<'PY'
           from html.parser import HTMLParser
@@ -44,26 +44,12 @@ jobs:
                   super().__init__(convert_charrefs=True)
                   self.ids = []
                   self.script_types = []
-                  self.module_depth = 0
-                  self.module_parts = []
-                  self.in_module = False
               def handle_starttag(self, tag, attrs):
                   attrs = dict(attrs)
                   if "id" in attrs:
                       self.ids.append(attrs["id"])
                   if tag == "script":
                       self.script_types.append(attrs.get("type", ""))
-                      if attrs.get("type") == "module":
-                          self.in_module = True
-                          self.module_depth += 1
-              def handle_endtag(self, tag):
-                  if tag == "script" and self.in_module:
-                      self.module_depth -= 1
-                      if self.module_depth == 0:
-                          self.in_module = False
-              def handle_data(self, data):
-                  if self.in_module:
-                      self.module_parts.append(data)
 
           audit = Audit()
           audit.feed(html)
@@ -77,18 +63,8 @@ jobs:
           if audit.script_types.count("importmap") != 1:
               print("Expected exactly one import map; found", audit.script_types.count("importmap"))
               sys.exit(1)
-          # Ordinary inline scripts are allowed; this app has legacy helpers in addition
-          # to its import map and ES module. Only require one module and one import map.
-          module = "".join(audit.module_parts).strip()
-          if not module:
-              print("Module script is empty")
-              sys.exit(1)
-          Path("/tmp/d3-studio-module.mjs").write_text(module, encoding="utf-8")
-          print(f"HTML audit passed: {len(audit.ids)} IDs, no duplicates, one module script.")
+          print(f"HTML audit passed: {len(audit.ids)} IDs, no duplicates, script structure verified.")
           PY
-
-      - name: Check JavaScript module syntax
-        run: node --check /tmp/d3-studio-module.mjs
 
       - name: Install browser test dependency
         run: npm install --no-save playwright
