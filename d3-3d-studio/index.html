@@ -890,7 +890,7 @@ if(hardwareQuickPreset)hardwareQuickPreset.addEventListener('change',()=>{
 
 // Prototype 69 · panel identification, finish, edge colour and grain direction
 let unitPanelSchedule=[];
-function unitPanelBandLength(p){const e=p.edges||'';return ((e.includes('T')||e.includes('B'))?2*p.width:0)+((e.includes('L')||e.includes('R'))?2*p.length:0)}
+function unitPanelBandLength(p){const e=p.edges||'';return ((e.includes('T')||e.includes('B'))?2*p.length:0)+((e.includes('L')||e.includes('R'))?2*p.width:0)}
 function unitPanelColorOptions(selected){const colors=[['#c9a77b','Oak'],['#e6e0d2','White'],['#595b60','Graphite'],['#8c644b','Walnut'],['#111111','Black'],['#aeb7bd','Light Grey']];return colors.map(([v,n])=>'<option value="'+v+'" '+(selected===v?'selected':'')+'>'+n+'</option>').join('')}
 function unitPanelSelect(kind,p,index){if(kind==='grain'){const opts=[['length','Length direction'],['width','Width direction'],['none','No grain']];return '<select data-unit-index="'+index+'" data-unit-field="grain">'+opts.map(([v,n])=>'<option value="'+v+'" '+(p.grain===v?'selected':'')+'>'+n+'</option>').join('')+'</select>'}return '<select data-unit-index="'+index+'" data-unit-field="'+kind+'">'+unitPanelColorOptions(p[kind])+'</select>'}
 function unitPanelNumberInput(field,value,index,min,max){return '<input type="number" min="'+min+'" '+(max?'max="'+max+'"':'')+' step="1" value="'+value+'" data-unit-index="'+index+'" data-unit-field="'+field+'" style="width:76px;min-width:65px">'}
