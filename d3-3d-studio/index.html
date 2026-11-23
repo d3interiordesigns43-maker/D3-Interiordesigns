@@ -934,6 +934,18 @@ el('generateUnitPanels').addEventListener('click',generateUnitPanelSchedule);
 el('exportUnitPanels').addEventListener('click',()=>{
  if(!unitPanelSchedule.length){alert('Generate the panel schedule first.');return}
  const rows=[['Panel ID','Panel','Qty','Length mm','Width mm','Thickness mm','Edge band T/B/L/R','Mica / finish colour','Edge band colour','Grain direction','Edge band total m'],...unitPanelSchedule.map(p=>[p.id,p.name,p.qty,p.length,p.width,p.thickness,p.edges,p.finish,p.edge,p.grain,(unitPanelBandLength(p)*p.qty/1000).toFixed(2)])];
+ const edgeTotals=new Map();
+ unitPanelSchedule.forEach(p=>{
+  const key=p.edge||'Unspecified';
+  const item=edgeTotals.get(key)||{colour:key,panelTypes:0,pieces:0,tb:0,lr:0,total:0};
+  item.panelTypes+=1;item.pieces+=p.qty;
+  const edges=p.edges||'';
+  item.tb+=((edges.includes('T')||edges.includes('B'))?2*p.length*p.qty/1000:0);
+  item.lr+=((edges.includes('L')||edges.includes('R'))?2*p.width*p.qty/1000:0);
+  item.total=item.tb+item.lr;edgeTotals.set(key,item);
+ });
+ rows.push([],['EDGE BAND COLOUR SUMMARY','Panel types','Total pieces','Top / bottom metres','Left / right metres','Total metres'],
+  ...Array.from(edgeTotals.values()).map(x=>[x.colour,x.panelTypes,x.pieces,x.tb.toFixed(2),x.lr.toFixed(2),x.total.toFixed(2)]));
  const hardware=window.d3UnitHardwareExport||[];
  rows.push([],['HARDWARE ESTIMATE','Brand / selection','Estimated qty','Basis / note'],...hardware);
  const csv=rows.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n'),blob=new Blob(['\ufeff',csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');
