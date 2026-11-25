@@ -393,6 +393,8 @@ parts.forEach((p,i)=>addMesh(p,i,p.kind==='back'?'#b5b5b5':p.kind==='front'||p.k
 // Visual edge-band strips on the near face of each panel; simplified preview, not a true edge wrap
  // Edge band preview: perimeter strips span the board's 18 mm thickness and are placed on the exposed XY edges.
  parts.forEach((p,i)=>{if(!p.edges)return;const bandMat=new THREE.MeshStandardMaterial({color:p.edgeColor||el('ebColor').value,roughness:.55});const ebT=Math.min(18,Math.max(1,p.sz)),addEdge=(sx,sy,x,y)=>{const strip=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,p.sz),bandMat);strip.position.set(x,y,p.z);strip.userData.index=i;strip.userData.role='edge-band';assembly.add(strip)};if(p.edges.includes('T'))addEdge(p.sx,ebT,p.x,p.y+p.sy/2-ebT/2);if(p.edges.includes('B'))addEdge(p.sx,ebT,p.x,p.y-p.sy/2+ebT/2);if(p.edges.includes('L'))addEdge(ebT,p.sy-2*ebT,p.x-p.sx/2+ebT/2,p.y);if(p.edges.includes('R'))addEdge(ebT,p.sy-2*ebT,p.x+p.sx/2-ebT/2,p.y)});
+// Door hinge reference markers placed on the inside face.
+const hMargin=+el('hingeMargin').value,cupSet=+el('cupSetback').value,cupDia=+el('cupDia').value;const frontParts=parts.filter(p=>p.kind==='door');frontParts.forEach(p=>{const idx=parts.indexOf(p),margin=Math.min(hMargin,Math.max(20,p.sy/2-20));for(let h=0;h<hingeN;h++){const yy=hingeN===1?p.y:p.y-p.sy/2+margin+h*(Math.max(0,p.sy-2*margin)/Math.max(1,hingeN-1));guideSphere(p.x-p.sx/2+cupSet,yy,p.z-p.sz/2-4,Math.max(4,cupDia/5),0x77c7e8,idx)}});
 // Conceptual handle markers on drawer fronts and doors; placement is adjustable, not a drilling template
 if(el('handleStyle').value!=='none'){
  const inset=+el('handleInset').value,bottom=+el('handleBottom').value;
